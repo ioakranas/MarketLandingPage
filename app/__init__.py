@@ -28,19 +28,26 @@ def create_app(test_config: dict | None = None) -> Flask:
         SESSION_COOKIE_SAMESITE="Lax",
         # Enable when served over HTTPS (always, in production).
         SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE") == "1",
+        # Temporary lockout: this many failed logins within the window locks the account.
+        LOCKOUT_THRESHOLD=5,
+        LOCKOUT_WINDOW_MINUTES=15,
     )
 
     app.config.update(test_config or {})
 
     os.makedirs(app.instance_path, exist_ok=True)
 
-    from app import auth, db
+    from app import cli, db
+    from app.routes import account, auth, registration
 
     db.init_app(app)
+    cli.init_app(app)
     # Every POST must carry a valid token from a page we rendered (blocks cross-site
     # form submissions made from another origin in the user's browser).
     csrf.init_app(app)
+    app.register_blueprint(registration.bp)
     app.register_blueprint(auth.bp)
+    app.register_blueprint(account.bp)
 
     @app.errorhandler(CSRFError)
     def handle_csrf_error(_error):

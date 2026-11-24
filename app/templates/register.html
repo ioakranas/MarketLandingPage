@@ -9,7 +9,7 @@
 {% block content %}
 <h1>Register</h1>
 
-<form method="post" action="{{ url_for('auth.register_submit') }}" novalidate>
+<form method="post" action="{{ url_for('registration.register_submit') }}" novalidate>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
     <div class="field">

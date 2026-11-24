@@ -20,8 +20,9 @@ dev = [
     "pytest-cov>=6",
 ]
 
-[tool.setuptools]
-packages = ["app"]
+[tool.setuptools.packages.find]
+include = ["app", "app.*"]
+# templates/ and static/ are found as data folders (namespace packages) holding package-data
 
 [tool.setuptools.package-data]
 app = ["schema.sql", "templates/*.html", "static/**/*"]

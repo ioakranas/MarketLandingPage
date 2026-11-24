@@ -1,16 +1,17 @@
-"""Registration routes (the @Controller layer)."""
+"""Customer onboarding: the sign-up form and the thank-you page."""
 
 from flask import Blueprint, redirect, render_template, request, session, url_for
 
 from app import services
+from app.routes import form_without_password
 from app.validation import validate_registration
 
-bp = Blueprint("auth", __name__)
+bp = Blueprint("registration", __name__)
 
 
 @bp.get("/")
 def index():
-    return redirect(url_for("auth.register"))
+    return redirect(url_for("registration.register"))
 
 
 @bp.get("/register")
@@ -32,7 +33,7 @@ def register_submit():
 
     # Post/Redirect/Get: refreshing the thank-you page must not resubmit the form.
     session["registered_name"] = registration.first_name
-    return redirect(url_for("auth.register_success"))
+    return redirect(url_for("registration.register_success"))
 
 
 @bp.get("/register/success")
@@ -40,15 +41,14 @@ def register_success():
     # One-time page: the name is removed from the session as it is shown.
     first_name = session.pop("registered_name", None)
     if first_name is None:
-        return redirect(url_for("auth.register"))
+        return redirect(url_for("registration.register"))
     return render_template("register_success.html", first_name=first_name)
 
 
 def _render_register(form, errors):
-    # The submitted password is never sent back to the browser.
     return render_template(
         "register.html",
         countries=services.get_countries(),
-        form={key: value for key, value in form.items() if key != "password"},
+        form=form_without_password(form),
         errors=errors,
     )

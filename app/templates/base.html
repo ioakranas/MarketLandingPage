@@ -7,7 +7,10 @@
 </head>
 <body>
     <header>
-        <a href="{{ url_for('auth.index') }}">HF Markets</a>
+        <a href="{{ url_for('registration.index') }}">HF Markets</a>
+        {% block header_action %}
+        <a href="{{ url_for('auth.login') }}">Login</a>
+        {% endblock %}
     </header>
 
     <main>
