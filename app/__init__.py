@@ -8,7 +8,10 @@ global. That lets tests create isolated app instances with their own configurati
 import os
 import secrets
 
-from flask import Flask
+from flask import Flask, render_template
+from flask_wtf.csrf import CSRFError, CSRFProtect
+
+csrf = CSRFProtect()
 
 
 def create_app(test_config: dict | None = None) -> Flask:
@@ -31,8 +34,17 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     os.makedirs(app.instance_path, exist_ok=True)
 
-    from app import db
+    from app import auth, db
 
     db.init_app(app)
+    # Every POST must carry a valid token from a page we rendered (blocks cross-site
+    # form submissions made from another origin in the user's browser).
+    csrf.init_app(app)
+    app.register_blueprint(auth.bp)
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(_error):
+        message = "Your session has expired. Please reload the page and try again."
+        return render_template("error.html", message=message), 400
 
     return app

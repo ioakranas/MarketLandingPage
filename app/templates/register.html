@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Register | HF Markets{% endblock %}
+
+{% macro field_error(name) -%}
+    {% if errors[name] %}<p class="field-error" id="{{ name }}-error">{{ errors[name] }}</p>{% endif %}
+{%- endmacro %}
+
+{% block content %}
+<h1>Register</h1>
+
+<form method="post" action="{{ url_for('auth.register_submit') }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="field">
+        <label for="first_name">First Name</label>
+        <input id="first_name" name="first_name" type="text" autocomplete="given-name"
+               value="{{ form.get('first_name', '') }}">
+        {{ field_error('first_name') }}
+    </div>
+
+    <div class="field">
+        <label for="last_name">Last Name</label>
+        <input id="last_name" name="last_name" type="text" autocomplete="family-name"
+               value="{{ form.get('last_name', '') }}">
+        {{ field_error('last_name') }}
+    </div>
+
+    <div class="field">
+        <label for="country">Country</label>
+        <select id="country" name="country" autocomplete="country">
+            <option value="">Country</option>
+            {% for country in countries %}
+            <option value="{{ country.iso_code }}" data-dial-code="{{ country.dial_code }}"
+                    {% if form.get('country') == country.iso_code %}selected{% endif %}>
+                {{ country.name }}
+            </option>
+            {% endfor %}
+        </select>
+        {{ field_error('country') }}
+    </div>
+
+    <div class="field">
+        <label for="phone_code">Code</label>
+        <input id="phone_code" name="phone_code" type="text" inputmode="numeric"
+               value="{{ form.get('phone_code', '') }}">
+        {{ field_error('phone_code') }}
+    </div>
+
+    <div class="field">
+        <label for="phone">Phone</label>
+        <input id="phone" name="phone" type="tel" autocomplete="tel-national"
+               value="{{ form.get('phone', '') }}">
+        {{ field_error('phone') }}
+    </div>
+
+    <div class="field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="email"
+               value="{{ form.get('email', '') }}">
+        {{ field_error('email') }}
+    </div>
+
+    <div class="field">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="new-password">
+        {{ field_error('password') }}
+    </div>
+
+    <div class="field">
+        <label>
+            <input name="terms" type="checkbox" {% if form.get('terms') %}checked{% endif %}>
+            I have read and accepted the <a href="#">Privacy Policy</a>
+            and <a href="#">Terms and Conditions</a>
+        </label>
+        {{ field_error('terms') }}
+    </div>
+
+    <button type="submit">Join Now</button>
+</form>
+{% endblock %}
