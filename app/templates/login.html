@@ -1,36 +1,23 @@
 {% extends "base.html" %}
+{% import "_macros.html" as ui %}
 
 {% block title %}Login | HF Markets{% endblock %}
+{% block heading %}Login{% endblock %}
 
 {% block header_action %}
-<a href="{{ url_for('registration.register') }}">Register</a>
+<a class="button button--green button--small" href="{{ url_for('registration.register') }}">Register</a>
 {% endblock %}
 
-{% macro field_error(name) -%}
-    {% if errors[name] %}<p class="field-error" id="{{ name }}-error">{{ errors[name] }}</p>{% endif %}
-{%- endmacro %}
-
 {% block content %}
-<h1>Login</h1>
+<h2 class="card__title">Lorem ipsum dolor sit amet</h2>
 
-<form method="post" action="{{ url_for('auth.login_submit') }}" novalidate>
+<form class="form" method="post" action="{{ url_for('auth.login_submit') }}" novalidate>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-    {% if errors.form %}<p class="form-error" role="alert">{{ errors.form }}</p>{% endif %}
+    {{ ui.form_error(errors) }}
+    {{ ui.input("email", "Email", errors, form.get("email"), type="email", autocomplete="username") }}
+    {{ ui.password("password", errors, autocomplete="current-password") }}
 
-    <div class="field">
-        <label for="email">Email</label>
-        <input id="email" name="email" type="email" autocomplete="username"
-               value="{{ form.get('email', '') }}">
-        {{ field_error('email') }}
-    </div>
-
-    <div class="field">
-        <label for="password">Password</label>
-        <input id="password" name="password" type="password" autocomplete="current-password">
-        {{ field_error('password') }}
-    </div>
-
-    <button type="submit">Login</button>
+    <button class="button button--red button--submit" type="submit">Login</button>
 </form>
 {% endblock %}

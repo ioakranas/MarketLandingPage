@@ -1,20 +1,23 @@
 {% extends "base.html" %}
 
 {% block title %}Welcome | HF Markets{% endblock %}
+{% block heading %}Welcome{% endblock %}
 
 {% block header_action %}
 <form method="post" action="{{ url_for('auth.logout') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button type="submit">Logout</button>
+    <button class="button button--outline-red button--small" type="submit">Logout</button>
 </form>
 {% endblock %}
 
 {% block content %}
-<h1>Welcome back, {{ customer.first_name }}!</h1>
-<p>You are logged in as {{ customer.email }}.</p>
-{% if stats.previous_login_at %}
-<p>This is login #{{ stats.login_count }}. Your previous login was on {{ stats.previous_login_at }} UTC.</p>
-{% else %}
-<p>This is your first login. Welcome aboard!</p>
-{% endif %}
+<div class="message">
+    <h2 class="card__title">Welcome back, {{ customer.first_name }}!</h2>
+    <p>You are logged in as <strong>{{ customer.email }}</strong>.</p>
+    {% if stats.previous_login_at %}
+    <p>This is login #{{ stats.login_count }}. Your previous login was on {{ stats.previous_login_at }} UTC.</p>
+    {% else %}
+    <p>This is your first login. Welcome aboard!</p>
+    {% endif %}
+</div>
 {% endblock %}

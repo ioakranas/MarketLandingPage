@@ -1,0 +1,445 @@
+/* HF Markets – registration & login. Mobile-first: base styles target small screens,
+   media queries add the two-column desktop layout from the Figma design. */
+
+:root {
+    --color-header: #1a1a1a;
+    --color-red: #cc0a14;
+    --color-red-dark: #a30810;
+    --color-green: #1e8e4a;
+    --color-green-dark: #17733b;
+    --color-text: #111111;
+    --color-muted: #6b6b6b;
+    --color-border: #a8a8a8;
+    --color-error: #c8102e;
+    --color-error-bg: #fdecee;
+    --color-focus: #2563eb;
+
+    --font-body: "Open Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-heading: "Roboto Condensed", "Arial Narrow", Arial, sans-serif;
+
+    --radius-card: 8px;
+    --radius-input: 3px;
+    --input-height: 40px;
+    --header-height: 72px;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--color-text);
+    background: var(--color-header);
+}
+
+a {
+    color: var(--color-red);
+}
+
+/* Hidden visually, still announced by screen readers. */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.container {
+    width: 100%;
+    max-width: 1260px;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+/* --- header -------------------------------------------------------------------------- */
+
+.site-header {
+    background: var(--color-header);
+}
+
+.site-header__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: var(--header-height);
+}
+
+.brand {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-decoration: none;
+}
+
+.brand__tagline {
+    display: none;
+    font-size: 9px;
+    color: #cfcfcf;
+}
+
+.brand__logo {
+    display: block;
+    width: 84px;
+    height: auto;
+}
+
+/* --- hero ---------------------------------------------------------------------------- */
+
+.hero {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px 48px;
+    /* Dark navy fading to warm brown, as in the design. When the Figma background photo
+       is exported to static/img/hero-bg.jpg, add it as the last layer:
+       url("../img/hero-bg.jpg") center / cover no-repeat */
+    background:
+        radial-gradient(ellipse at 50% 110%, rgba(120, 62, 30, 0.55), transparent 60%),
+        linear-gradient(180deg, #1c2238 0%, #20263d 45%, #2a2430 100%);
+}
+
+.hero__content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.hero__title {
+    margin: 0 0 24px;
+    font-family: var(--font-heading);
+    font-size: 40px;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #ffffff;
+    text-align: center;
+}
+
+/* --- card ---------------------------------------------------------------------------- */
+
+.card {
+    width: 100%;
+    max-width: 410px;
+    padding: 28px 20px;
+    background: #ffffff;
+    border-radius: var(--radius-card);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.card--wide {
+    max-width: 655px;
+}
+
+.card__title {
+    margin: 0 0 24px;
+    font-size: 20px;
+    font-weight: 700;
+    text-align: center;
+}
+
+/* --- form ---------------------------------------------------------------------------- */
+
+.form__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.form .field + .field {
+    margin-top: 14px;
+}
+
+.form__grid .field + .field {
+    margin-top: 0;
+}
+
+.input {
+    width: 100%;
+    height: var(--input-height);
+    padding: 0 12px;
+    font: inherit;
+    font-size: 15px;
+    color: var(--color-text);
+    background: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-input);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.input::placeholder {
+    color: #8c8c8c;
+    opacity: 1;
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--color-focus);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+.select {
+    padding-right: 36px;
+    appearance: none;
+    background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='8' viewBox='0 0 14 8'%3E%3Cpath d='M1 1l6 6 6-6' fill='none' stroke='%23777' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 12px center;
+    cursor: pointer;
+}
+
+/* Grey "Country" placeholder until a real country is chosen. */
+.select:has(option[value=""]:checked) {
+    color: #8c8c8c;
+}
+
+.select option {
+    color: var(--color-text);
+}
+
+/* Phone: narrow numeric code + number, side by side at every width. */
+.phone {
+    display: flex;
+    gap: 8px;
+}
+
+.phone__code {
+    position: relative;
+    flex: 0 0 64px;
+}
+
+.phone__code .input {
+    padding-left: 20px;
+    padding-right: 6px;
+}
+
+.phone__code .input:placeholder-shown {
+    padding-left: 10px;
+}
+
+.phone__plus {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text);
+    pointer-events: none;
+}
+
+/* No '+' while the field shows its "Code" placeholder. */
+.phone__code .input:placeholder-shown ~ .phone__plus {
+    display: none;
+}
+
+.phone__number {
+    flex: 1;
+    min-width: 0;
+}
+
+.password {
+    position: relative;
+}
+
+/* Validation feedback */
+.field--invalid .input,
+.field--invalid.phone__code .input,
+.field--invalid.phone__number .input {
+    border-color: var(--color-error);
+}
+
+.field__error {
+    margin: 5px 0 0;
+    font-size: 12.5px;
+    line-height: 1.35;
+    color: var(--color-error);
+}
+
+.form-error {
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--color-error);
+    background: var(--color-error-bg);
+    border-left: 3px solid var(--color-error);
+    border-radius: var(--radius-input);
+}
+
+.checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--color-muted);
+    cursor: pointer;
+}
+
+.checkbox input {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    margin: 1px 0 0;
+    accent-color: var(--color-green);
+}
+
+.checkbox a {
+    text-decoration: none;
+}
+
+.checkbox a:hover {
+    text-decoration: underline;
+}
+
+/* --- buttons ------------------------------------------------------------------------- */
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 20px;
+    font: inherit;
+    font-weight: 700;
+    text-decoration: none;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+    border-radius: var(--radius-input);
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.button:focus-visible,
+.checkbox input:focus-visible,
+a:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+.button--small {
+    height: 32px;
+    padding: 0 18px;
+    font-size: 14px;
+    font-weight: 400;
+    text-transform: none;
+}
+
+.button--submit {
+    display: flex;
+    width: 100%;
+    height: 48px;
+    margin: 24px auto 0;
+    font-size: 16px;
+}
+
+.button--green {
+    color: #ffffff;
+    background: var(--color-green);
+}
+
+.button--green:hover {
+    background: var(--color-green-dark);
+}
+
+.button--red {
+    color: #ffffff;
+    background: var(--color-red);
+}
+
+.button--red:hover {
+    background: var(--color-red-dark);
+}
+
+.button--outline-red {
+    color: #ffffff;
+    background: transparent;
+    border-color: var(--color-red);
+}
+
+.button--outline-red:hover {
+    background: var(--color-red);
+}
+
+/* --- message pages (thank you / welcome / error) ------------------------------------ */
+
+.message {
+    text-align: center;
+}
+
+.message p {
+    margin: 0 0 8px;
+    color: var(--color-muted);
+}
+
+.message .card__title {
+    margin-bottom: 12px;
+}
+
+/* --- larger screens ------------------------------------------------------------------ */
+
+@media (min-width: 640px) {
+    :root {
+        --header-height: 118px;
+    }
+
+    .brand__tagline {
+        display: block;
+    }
+
+    .brand__logo {
+        width: 108px;
+    }
+
+    .hero {
+        padding: 56px 24px 72px;
+    }
+
+    .hero__title {
+        font-size: 56px;
+        margin-bottom: 32px;
+    }
+
+    .card {
+        padding: 32px 36px 36px;
+    }
+
+    .card__title {
+        font-size: 22px;
+    }
+
+    .form__grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .button--submit {
+        width: 275px;
+    }
+
+    .card:not(.card--wide) .button--submit {
+        width: 100%;
+    }
+}
+
+@media (min-width: 1024px) {
+    .container {
+        padding: 0 32px;
+    }
+
+    .hero__title {
+        font-size: 64px;
+    }
+}

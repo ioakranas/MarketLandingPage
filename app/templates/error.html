@@ -1,9 +1,12 @@
 {% extends "base.html" %}
 
 {% block title %}Error | HF Markets{% endblock %}
+{% block heading %}Oops{% endblock %}
 
 {% block content %}
-<h1>Something went wrong</h1>
-<p>{{ message }}</p>
-<p><a href="{{ url_for('registration.index') }}">Back to the start</a></p>
+<div class="message" role="alert">
+    <h2 class="card__title">Something went wrong</h2>
+    <p>{{ message }}</p>
+    <a class="button button--red button--submit" href="{{ url_for('registration.index') }}">Back to the start</a>
+</div>
 {% endblock %}

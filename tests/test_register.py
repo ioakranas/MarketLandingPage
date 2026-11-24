@@ -1,5 +1,7 @@
 """End-to-end tests of the registration flow through the HTTP test client."""
 
+import re
+
 import pytest
 from argon2 import PasswordHasher
 
@@ -134,7 +136,7 @@ def test_form_keeps_entered_values_but_never_the_password(client):
 
     assert 'value="Ana"' in html
     assert 'value="ioannis@example.com"' in html
-    assert '<option value="GR" data-dial-code="30"\n                    selected>' in html
+    assert re.search(r'<option value="GR" data-dial-code="30"\s+selected>', html)
     assert "Secret#123" not in html
 
 

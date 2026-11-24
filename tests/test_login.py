@@ -54,7 +54,7 @@ def attempts(app):
 
 def test_login_page_renders(client):
     html = client.get("/login").get_data(as_text=True)
-    assert '<form method="post" action="/login"' in html
+    assert 'method="post" action="/login"' in html
     assert 'href="/register"' in html
 
 

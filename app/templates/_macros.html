@@ -1,0 +1,37 @@
+{#- Reusable form pieces. Labels are visually hidden (the design uses placeholders) but
+    stay in the markup for screen readers; errors are linked to their input via
+    aria-describedby so assistive technology reads them out. -#}
+
+{% macro field_error(name, errors) -%}
+    {% if errors.get(name) %}<p class="field__error" id="{{ name }}-error">{{ errors[name] }}</p>{% endif %}
+{%- endmacro %}
+
+{% macro invalid_attrs(name, errors) -%}
+    {% if errors.get(name) %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}
+{%- endmacro %}
+
+{% macro input(name, label, errors, value="", type="text", autocomplete=None, inputmode=None) -%}
+<div class="field{% if errors.get(name) %} field--invalid{% endif %}">
+    <label class="visually-hidden" for="{{ name }}">{{ label }}</label>
+    <input class="input" id="{{ name }}" name="{{ name }}" type="{{ type }}" placeholder="{{ label }}"
+           {%- if autocomplete %} autocomplete="{{ autocomplete }}"{% endif %}
+           {%- if inputmode %} inputmode="{{ inputmode }}"{% endif %}
+           {%- if value %} value="{{ value }}"{% endif %} {{ invalid_attrs(name, errors) }}>
+    {{ field_error(name, errors) }}
+</div>
+{%- endmacro %}
+
+{% macro password(name, errors, autocomplete) -%}
+<div class="field{% if errors.get(name) %} field--invalid{% endif %}">
+    <label class="visually-hidden" for="{{ name }}">Password</label>
+    <div class="password">
+        <input class="input" id="{{ name }}" name="{{ name }}" type="password" placeholder="Password"
+               autocomplete="{{ autocomplete }}" {{ invalid_attrs(name, errors) }}>
+    </div>
+    {{ field_error(name, errors) }}
+</div>
+{%- endmacro %}
+
+{% macro form_error(errors) -%}
+    {% if errors.get("form") %}<p class="form-error" role="alert">{{ errors["form"] }}</p>{% endif %}
+{%- endmacro %}
