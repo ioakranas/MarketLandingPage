@@ -6,7 +6,7 @@ from flask import Blueprint, g, redirect, render_template, request, session, url
 
 from app import services
 from app.routes import form_without_password
-from app.validation import validate_login
+from app.validation import client_config, validate_login
 
 bp = Blueprint("auth", __name__)
 
@@ -69,4 +69,9 @@ def logout():
 
 
 def _render_login(form, errors):
-    return render_template("login.html", form=form_without_password(form), errors=errors)
+    return render_template(
+        "login.html",
+        form=form_without_password(form),
+        errors=errors,
+        validation_config=client_config(),
+    )

@@ -11,7 +11,9 @@
 {% block content %}
 <h2 class="card__title">Lorem ipsum dolor sit amet</h2>
 
-<form class="form" method="post" action="{{ url_for('auth.login_submit') }}" novalidate>
+{{ ui.validation_config(validation_config) }}
+<form class="form" method="post" action="{{ url_for('auth.login_submit') }}"
+      data-validate="login" novalidate>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
     {{ ui.form_error(errors) }}

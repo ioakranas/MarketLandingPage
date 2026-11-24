@@ -8,7 +8,9 @@
 {% block content %}
 <h2 class="card__title">Lorem ipsum dolor sit amet</h2>
 
-<form class="form" method="post" action="{{ url_for('registration.register_submit') }}" novalidate>
+{{ ui.validation_config(validation_config) }}
+<form class="form" method="post" action="{{ url_for('registration.register_submit') }}"
+      data-validate="register" novalidate>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
     <div class="form__grid">

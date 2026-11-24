@@ -32,6 +32,12 @@
 </div>
 {%- endmacro %}
 
+{#- Validation rules for the browser. |tojson escapes <, > and & so the JSON can't break
+    out of the script element. -#}
+{% macro validation_config(config) -%}
+<script type="application/json" id="validation-config">{{ config | tojson }}</script>
+{%- endmacro %}
+
 {% macro form_error(errors) -%}
     {% if errors.get("form") %}<p class="form-error" role="alert">{{ errors["form"] }}</p>{% endif %}
 {%- endmacro %}

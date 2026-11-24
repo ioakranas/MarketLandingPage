@@ -4,7 +4,7 @@ from flask import Blueprint, redirect, render_template, request, session, url_fo
 
 from app import services
 from app.routes import form_without_password
-from app.validation import validate_registration
+from app.validation import client_config, validate_registration
 
 bp = Blueprint("registration", __name__)
 
@@ -51,4 +51,5 @@ def _render_register(form, errors):
         countries=services.get_countries(),
         form=form_without_password(form),
         errors=errors,
+        validation_config=client_config(),
     )
