@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.validation import (
+from common.validation import (
     LoginCredentials,
     Registration,
     validate_login,

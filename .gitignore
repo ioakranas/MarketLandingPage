@@ -9,10 +9,10 @@ dist/
 .venv/
 venv/
 
-# Flask instance folder (holds the SQLite database at runtime)
-instance/
+# SQLite database (created by `manage.py migrate`) and collected static files
 *.sqlite3
 *.db
+staticfiles/
 
 # Environment / secrets
 .env
