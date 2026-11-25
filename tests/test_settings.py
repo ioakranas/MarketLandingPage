@@ -8,7 +8,7 @@ from django.core.management import call_command
 
 
 def load_settings(monkeypatch, **env):
-    for name in ["DJANGO_SECRET_KEY", "DJANGO_DEBUG", "DJANGO_SECURE_COOKIES"]:
+    for name in ["DJANGO_SECRET_KEY", "DJANGO_DEBUG", "DJANGO_SECURE_COOKIES", "DJANGO_NUM_PROXIES"]:
         monkeypatch.delenv(name, raising=False)
     for name, value in env.items():
         monkeypatch.setenv(name, value)
@@ -46,6 +46,14 @@ def test_argon2_is_the_default_password_hasher(monkeypatch):
     # Read from the settings module: tests swap in a fast hasher at runtime.
     hashers = load_settings(monkeypatch).PASSWORD_HASHERS
     assert hashers[0] == "django.contrib.auth.hashers.Argon2PasswordHasher"
+
+
+def test_client_ip_ignores_x_forwarded_for_by_default(monkeypatch):
+    assert load_settings(monkeypatch).REST_FRAMEWORK["NUM_PROXIES"] == 0
+
+
+def test_trusted_proxy_count_comes_from_environment(monkeypatch):
+    assert load_settings(monkeypatch, DJANGO_NUM_PROXIES="2").REST_FRAMEWORK["NUM_PROXIES"] == 2
 
 
 def test_api_is_json_only_and_secure_by_default():

@@ -17,6 +17,17 @@ def fast_password_hashing(settings):
     settings.PASSWORD_HASHERS = ["tests.hashers.FastArgon2PasswordHasher"]
 
 
+@pytest.fixture(autouse=True)
+def clear_cache():
+    """Rate-limit counters live in the cache: every test starts with none, like it
+    starts with an empty database."""
+    from django.core.cache import cache
+
+    cache.clear()
+    yield
+    cache.clear()
+
+
 @pytest.fixture
 def api_client():
     from rest_framework.test import APIClient

@@ -42,7 +42,7 @@ def test_every_endpoint_is_documented_with_a_stable_operation_id(schema):
 @pytest.mark.parametrize(
     ("path", "method", "statuses"),
     [
-        ("/api/v1/registrations", "post", {"400", "403", "409"}),
+        ("/api/v1/registrations", "post", {"400", "403", "409", "429"}),
         ("/api/v1/sessions", "post", {"400", "401", "403", "429"}),
         ("/api/v1/sessions/current", "get", {"401"}),
         ("/api/v1/sessions/current", "delete", {"401", "403"}),

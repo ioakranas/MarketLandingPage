@@ -77,6 +77,23 @@ CSRF_PROBLEM = problem(
     "Missing or wrong CSRF token: send the csrftoken cookie's value in the X-CSRFToken header.",
 )
 
+RATE_LIMITED_PROBLEM = problem(
+    429,
+    "rate-limited",
+    "Too many requests",
+    "Too many requests. Please try again in 1 minute(s).",
+    "Too many requests from this IP address; the Retry-After header says when to try "
+    "again (seconds).",
+)
+
+
+def either(*problems, description: str):
+    """Several problem types sharing one status code, documented as one response."""
+    (key, first), *_ = problems
+    examples = [example for _, response in problems for example in response.examples]
+    return key, OpenApiResponse(response=first.response, description=description, examples=examples)
+
+
 NOT_AUTHENTICATED_PROBLEM = problem(
     401,
     "not-authenticated",

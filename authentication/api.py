@@ -25,7 +25,15 @@ from authentication.serializers import LoginRequestSerializer, SessionResponseSe
 from authentication.services import AccountLocked, InvalidCredentials, authenticate_customer
 from common.api import ApiProblem
 from common.authentication import SESSION_AUTH_CHALLENGE
-from common.schema import CSRF_PROBLEM, NOT_AUTHENTICATED_PROBLEM, problem, validation_problem
+from common.http import client_ip
+from common.schema import (
+    CSRF_PROBLEM,
+    NOT_AUTHENTICATED_PROBLEM,
+    RATE_LIMITED_PROBLEM,
+    either,
+    problem,
+    validation_problem,
+)
 
 
 # CSRF on login too ("login CSRF"): otherwise another site could log a visitor into
@@ -34,6 +42,7 @@ from common.schema import CSRF_PROBLEM, NOT_AUTHENTICATED_PROBLEM, problem, vali
 class SessionCreateView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []  # anonymous endpoint
+    throttle_scope = "login"  # settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]
 
     @extend_schema(
         tags=["Sessions"],
@@ -63,12 +72,17 @@ class SessionCreateView(APIView):
                     "Unknown email or wrong password: deliberately the same answer for both.",
                 ),
                 CSRF_PROBLEM,
-                problem(
-                    429,
-                    "account-locked",
-                    "Account temporarily locked",
-                    "Too many failed login attempts. Please try again in 15 minute(s).",
-                    "Too many failed attempts; the Retry-After header says when to try again.",
+                either(
+                    problem(
+                        429,
+                        "account-locked",
+                        "Account temporarily locked",
+                        "Too many failed login attempts. Please try again in 15 minute(s).",
+                        "This account had too many failed attempts.",
+                    ),
+                    RATE_LIMITED_PROBLEM,
+                    description="This account is locked, or this IP sent too many login "
+                    "requests. The Retry-After header says when to try again (seconds).",
                 ),
             ]
         ),
@@ -79,7 +93,7 @@ class SessionCreateView(APIView):
 
         try:
             user = authenticate_customer(
-                serializer.validated_data, ip_address=request.META.get("REMOTE_ADDR")
+                serializer.validated_data, ip_address=client_ip(request)
             )
         except InvalidCredentials:
             raise ApiProblem(

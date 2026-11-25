@@ -13,6 +13,8 @@ means clients need a single error-handling path. Comparable to a Spring
     }
 """
 
+import math
+
 from rest_framework import exceptions, status
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
@@ -61,6 +63,19 @@ def api_exception_handler(exc, context):
         )
         for header, value in exc.headers.items():
             response[header] = value
+        return response
+
+    if isinstance(exc, exceptions.Throttled):
+        # Same wording style as the account lockout; Retry-After for clients.
+        minutes = max(1, math.ceil((exc.wait or 60) / 60))
+        response = problem_response(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            "rate-limited",
+            "Too many requests",
+            f"Too many requests. Please try again in {minutes} minute(s).",
+        )
+        if exc.wait is not None:
+            response["Retry-After"] = str(exc.wait)
         return response
 
     if isinstance(exc, exceptions.ValidationError):

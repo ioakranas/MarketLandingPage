@@ -27,11 +27,31 @@ def test_nested_field_errors_keep_the_first_message():
 
 
 def test_drf_headers_are_preserved():
-    response = api_exception_handler(exceptions.Throttled(wait=30), {})
+    response = api_exception_handler(exceptions.MethodNotAllowed("PUT"), {})
+
+    assert response.status_code == 405
+    assert response.data["type"].endswith("/method-not-allowed")
+
+
+def test_throttled_is_a_rate_limited_problem_with_retry_after():
+    response = api_exception_handler(exceptions.Throttled(wait=61), {})
 
     assert response.status_code == 429
-    assert response["Retry-After"] == "30"
-    assert response.data["type"].endswith("/throttled")
+    assert response["Retry-After"] == "61"
+    assert response.data == {
+        "type": "https://hfmarkets.example/problems/rate-limited",
+        "title": "Too many requests",
+        "status": 429,
+        "detail": "Too many requests. Please try again in 2 minute(s).",
+    }
+
+
+def test_throttled_without_wait_has_no_retry_after():
+    response = api_exception_handler(exceptions.Throttled(), {})
+
+    assert response.status_code == 429
+    assert "Retry-After" not in response
+    assert response.data["detail"] == "Too many requests. Please try again in 1 minute(s)."
 
 
 def test_api_csrf_failure_is_problem_details():

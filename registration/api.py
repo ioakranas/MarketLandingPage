@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.api import ApiProblem
-from common.schema import CSRF_PROBLEM, problem, validation_problem
+from common.schema import CSRF_PROBLEM, RATE_LIMITED_PROBLEM, problem, validation_problem
 from registration.serializers import CustomerResponseSerializer, RegistrationRequestSerializer
 from registration.services import EmailAlreadyRegistered, register_customer
 
@@ -21,6 +21,7 @@ from registration.services import EmailAlreadyRegistered, register_customer
 class RegistrationView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []  # anonymous endpoint
+    throttle_scope = "registrations"  # settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]
 
     @extend_schema(
         tags=["Registration"],
@@ -58,6 +59,7 @@ class RegistrationView(APIView):
                     "The email belongs to an existing account (compared case-insensitively).",
                     errors={"email": "This email is already registered. Please log in instead."},
                 ),
+                RATE_LIMITED_PROBLEM,
             ]
         ),
     )

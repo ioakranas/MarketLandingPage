@@ -103,6 +103,21 @@ REST_FRAMEWORK = {
     # Every error as RFC 9457 Problem Details.
     "EXCEPTION_HANDLER": "common.api.api_exception_handler",
     "UNAUTHENTICATED_USER": None,
+    # Rate limiting per client IP for the endpoints that set a throttle_scope (the
+    # anonymous, expensive or abusable ones). Counters live in the cache (see CACHES).
+    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
+    "DEFAULT_THROTTLE_RATES": {
+        # Sign-up: generous for people (and shared office IPs), useless for bots.
+        "registrations": "10/hour",
+        # Login: per IP, across all accounts (credential stuffing). The per-account
+        # lockout (LOGIN_LOCKOUT_*) covers guessing one account's password.
+        "login": "10/minute",
+    },
+    # How the client IP is found. 0 = no proxy: use the connection's address and IGNORE
+    # X-Forwarded-For, which the client controls (otherwise a fake header per request
+    # would get a fresh limit every time). Behind N trusted proxies (load balancer,
+    # CDN), set DJANGO_NUM_PROXIES=N.
+    "NUM_PROXIES": int(os.environ.get("DJANGO_NUM_PROXIES", "0")),
     # OpenAPI 3 schema generated from the views and serializers (drf-spectacular).
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
@@ -160,6 +175,16 @@ AUTH_PASSWORD_VALIDATORS = [
         "OPTIONS": {"user_attributes": ["email"]},
     },
 ]
+
+# --- cache --------------------------------------------------------------------------
+
+# Holds the rate-limit counters. In-process memory: fine for one server process. With
+# several processes or servers the counters must be shared: Redis in production.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    }
+}
 
 # --- login --------------------------------------------------------------------------
 
