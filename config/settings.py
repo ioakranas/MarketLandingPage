@@ -50,6 +50,8 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
+    # First: the request id and access log cover everything below, errors included.
+    "common.middleware.RequestContextMiddleware",
     "django.middleware.security.SecurityMiddleware",
     # Serves static files efficiently in any environment (no separate web server needed).
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -175,6 +177,46 @@ AUTH_PASSWORD_VALIDATORS = [
         "OPTIONS": {"user_attributes": ["email"]},
     },
 ]
+
+# --- logging ------------------------------------------------------------------------
+
+# One line per event on stdout (12-factor: the platform collects and ships it).
+# json: for log platforms (production default). text: readable, for a developer's
+# terminal (default when DEBUG is on). Every line carries the request id.
+LOG_FORMAT = os.environ.get("DJANGO_LOG_FORMAT") or ("text" if DEBUG else "json")
+LOG_LEVEL = os.environ.get("DJANGO_LOG_LEVEL", "INFO").upper()
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {"()": "common.logs.JsonFormatter"},
+        "text": {"()": "common.logs.TextFormatter"},
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+            "formatter": LOG_FORMAT,
+        },
+        # Silences a logger properly (a logger without any handler falls back to
+        # Python's "last resort" output for warnings).
+        "null": {"class": "logging.NullHandler"},
+    },
+    # Everything (our code, Django, libraries) goes through the root logger's handler.
+    "root": {"handlers": ["console"], "level": LOG_LEVEL},
+    "loggers": {
+        # Django's defaults would print some lines twice and email errors to ADMINS.
+        "django": {"handlers": [], "level": LOG_LEVEL, "propagate": True},
+        # 4xx responses are in our access log already; keep only server errors (5xx,
+        # with traceback) from Django's request logger.
+        "django.request": {"level": "ERROR"},
+        # CSRF rejections are audit events (csrf.failed) with the same details.
+        "django.security.csrf": {"level": "ERROR"},
+        # runserver's own access lines: replaced by ours (logger "access").
+        "django.server": {"handlers": ["null"], "propagate": False},
+    },
+}
 
 # --- cache --------------------------------------------------------------------------
 

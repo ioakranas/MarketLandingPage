@@ -8,7 +8,8 @@ from django.core.management import call_command
 
 
 def load_settings(monkeypatch, **env):
-    for name in ["DJANGO_SECRET_KEY", "DJANGO_DEBUG", "DJANGO_SECURE_COOKIES", "DJANGO_NUM_PROXIES"]:
+    for name in ["DJANGO_SECRET_KEY", "DJANGO_DEBUG", "DJANGO_SECURE_COOKIES", "DJANGO_NUM_PROXIES",
+                 "DJANGO_LOG_FORMAT", "DJANGO_LOG_LEVEL"]:
         monkeypatch.delenv(name, raising=False)
     for name, value in env.items():
         monkeypatch.setenv(name, value)
@@ -54,6 +55,19 @@ def test_client_ip_ignores_x_forwarded_for_by_default(monkeypatch):
 
 def test_trusted_proxy_count_comes_from_environment(monkeypatch):
     assert load_settings(monkeypatch, DJANGO_NUM_PROXIES="2").REST_FRAMEWORK["NUM_PROXIES"] == 2
+
+
+def test_logs_are_json_in_production_and_text_while_debugging(monkeypatch):
+    production = load_settings(monkeypatch)
+    assert production.LOGGING["handlers"]["console"]["formatter"] == "json"
+    assert production.LOGGING["root"]["level"] == "INFO"
+    assert load_settings(monkeypatch, DJANGO_DEBUG="1").LOGGING["handlers"]["console"]["formatter"] == "text"
+
+
+def test_log_format_and_level_from_environment(monkeypatch):
+    custom = load_settings(monkeypatch, DJANGO_LOG_FORMAT="text", DJANGO_LOG_LEVEL="warning")
+    assert custom.LOGGING["handlers"]["console"]["formatter"] == "text"
+    assert custom.LOGGING["root"]["level"] == "WARNING"
 
 
 def test_api_is_json_only_and_secure_by_default():

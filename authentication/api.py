@@ -24,6 +24,7 @@ from authentication.selectors import session_summary
 from authentication.serializers import LoginRequestSerializer, SessionResponseSerializer
 from authentication.services import AccountLocked, InvalidCredentials, authenticate_customer
 from common.api import ApiProblem
+from common.audit import audit
 from common.authentication import SESSION_AUTH_CHALLENGE
 from common.http import client_ip
 from common.schema import (
@@ -154,5 +155,6 @@ class CurrentSessionView(APIView):
         ),
     )
     def delete(self, request):
+        audit("logout", user_id=request.user.pk, ip=client_ip(request))
         logout(request)  # deletes the server-side session
         return Response(status=status.HTTP_204_NO_CONTENT)

@@ -20,10 +20,9 @@ from django.utils import timezone
 from accounts.models import User
 from authentication.models import LoginAttempt
 from authentication.selectors import lockout_remaining
+from common.audit import audit
 from common.privacy import mask_email
 from common.validation import LoginCredentials
-
-logger = logging.getLogger(__name__)
 
 
 class InvalidCredentials(Exception):
@@ -52,23 +51,31 @@ def authenticate_customer(credentials: LoginCredentials, ip_address: str | None)
 
     # Checked before the password: while locked, guesses are not even evaluated.
     if user is not None and (retry_after := lockout_remaining(user, now)):
-        logger.warning("Login attempt on locked account %s from %s", user.pk, ip_address)
+        audit("login.locked", level=logging.WARNING, user_id=user.pk, ip=ip_address)
         raise AccountLocked(retry_after)
 
     authenticated = authenticate(username=credentials.email, password=credentials.password)
     if authenticated is None:
         if user is None:
-            logger.warning(
-                "Failed login for unknown email %s from %s",
-                mask_email(credentials.email),
-                ip_address,
+            # No account: masked address only (even a mistyped email is personal data).
+            audit(
+                "login.failed",
+                level=logging.WARNING,
+                reason="unknown_email",
+                email=mask_email(credentials.email),
+                ip=ip_address,
             )
         else:
             # Wrong password, or an inactive account (which never logs in).
+            reason = "wrong_password" if user.is_active else "inactive_account"
+            audit(
+                "login.failed", level=logging.WARNING, reason=reason, user_id=user.pk, ip=ip_address
+            )
             _record_attempt(user, succeeded=False, ip_address=ip_address, at=now)
         raise InvalidCredentials
 
     _record_attempt(authenticated, succeeded=True, ip_address=ip_address, at=now)
+    audit("login.succeeded", user_id=authenticated.pk, ip=ip_address)
     return authenticated
 
 

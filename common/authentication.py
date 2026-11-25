@@ -4,7 +4,11 @@ Kept apart from common.api on purpose: DRF imports the authentication classes wh
 rest_framework.views is still loading, so this module must not import DRF views.
 """
 
+import logging
+
 from rest_framework import authentication, exceptions
+
+from common.audit import audit
 
 # HTTP requires a WWW-Authenticate challenge on every 401. There is no registered
 # scheme for cookie sessions, so we name ours: it tells the client "log in via
@@ -34,5 +38,14 @@ class SessionAuthentication(authentication.SessionAuthentication):
         # Same problem type as the middleware's failure view (common.views).
         try:
             super().enforce_csrf(request)
-        except exceptions.PermissionDenied:
+        except exceptions.PermissionDenied as error:
+            from common.http import client_ip  # here: this module must not import DRF views
+
+            audit(
+                "csrf.failed",
+                level=logging.WARNING,
+                path=request.path,
+                reason=str(error.detail),
+                ip=client_ip(request),
+            )
             raise CsrfFailed from None

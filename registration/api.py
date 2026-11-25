@@ -9,6 +9,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.api import ApiProblem
+from common.audit import audit
+from common.http import client_ip
+from common.privacy import mask_email
 from common.schema import CSRF_PROBLEM, RATE_LIMITED_PROBLEM, problem, validation_problem
 from registration.serializers import CustomerResponseSerializer, RegistrationRequestSerializer
 from registration.services import EmailAlreadyRegistered, register_customer
@@ -70,6 +73,11 @@ class RegistrationView(APIView):
         try:
             customer = register_customer(serializer.validated_data)
         except EmailAlreadyRegistered:
+            audit(
+                "registration.duplicate_email",
+                email=mask_email(serializer.validated_data.email),
+                ip=client_ip(request),
+            )
             raise ApiProblem(
                 status.HTTP_409_CONFLICT,
                 "email-already-registered",
@@ -78,4 +86,10 @@ class RegistrationView(APIView):
                 errors={"email": "This email is already registered. Please log in instead."},
             ) from None
 
+        audit(
+            "registration.succeeded",
+            user_id=customer.user_id,
+            country=customer.country.iso_code,
+            ip=client_ip(request),
+        )
         return Response(CustomerResponseSerializer(customer).data, status=status.HTTP_201_CREATED)

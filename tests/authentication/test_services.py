@@ -63,7 +63,13 @@ def test_unknown_email_is_not_stored_but_logged_masked(customer, caplog):
         log_in(email="nobody@example.com")
 
     assert not LoginAttempt.objects.exists()
-    assert f"Failed login for unknown email no***@example.com from {IP}" in caplog.text
+    [record] = [r for r in caplog.records if r.name == "audit"]
+    assert (record.event, record.reason, record.email, record.ip) == (
+        "login.failed",
+        "unknown_email",
+        "no***@example.com",
+        IP,
+    )
     assert "nobody@example.com" not in caplog.text
 
 
@@ -180,7 +186,8 @@ def test_locked_attempt_is_logged(customer, clock, caplog):
     with caplog.at_level(logging.WARNING), pytest.raises(AccountLocked):
         log_in()
 
-    assert f"Login attempt on locked account {customer.user.pk} from {IP}" in caplog.text
+    locked = [r for r in caplog.records if getattr(r, "event", None) == "login.locked"]
+    assert [(r.user_id, r.ip, r.levelname) for r in locked] == [(customer.user.pk, IP, "WARNING")]
 
 
 def test_lockout_threshold_and_window_come_from_settings(customer, clock, settings):

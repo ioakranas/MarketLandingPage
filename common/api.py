@@ -13,11 +13,15 @@ means clients need a single error-handling path. Comparable to a Spring
     }
 """
 
+import logging
 import math
 
 from rest_framework import exceptions, status
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
+
+from common.audit import audit
+from common.http import client_ip
 
 PROBLEM_CONTENT_TYPE = "application/problem+json"
 PROBLEM_BASE_URL = "https://hfmarkets.example/problems/"
@@ -66,6 +70,13 @@ def api_exception_handler(exc, context):
         return response
 
     if isinstance(exc, exceptions.Throttled):
+        request, view = context.get("request"), context.get("view")
+        audit(
+            "rate_limit.exceeded",
+            level=logging.WARNING,
+            scope=getattr(view, "throttle_scope", None),
+            ip=client_ip(request) if request is not None else None,
+        )
         # Same wording style as the account lockout; Retry-After for clients.
         minutes = max(1, math.ceil((exc.wait or 60) / 60))
         response = problem_response(
