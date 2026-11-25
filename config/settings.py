@@ -27,11 +27,22 @@ DEBUG = env_flag("DJANGO_DEBUG")
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Project apps, one per feature
+    "common",
+    "accounts",
+    "countries",
+    "customers",
 ]
+
+# Identity model with email login, defined before the first migration (Django's advice:
+# swapping the user model later is very hard).
+AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -40,6 +51,7 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -55,6 +67,7 @@ TEMPLATES = [
         "OPTIONS": {
             "context_processors": [
                 "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
             ],
         },
@@ -109,4 +122,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+# Filled by `manage.py collectstatic` at deployment (then served compressed and cached).
 STATIC_ROOT = BASE_DIR / "staticfiles"
+# Until collected (local runs, tests), WhiteNoise serves straight from STATICFILES_DIRS.
+WHITENOISE_USE_FINDERS = True
