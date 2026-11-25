@@ -4,6 +4,7 @@ The fields describe the contract (types, which feeds the OpenAPI schema); the ru
 and messages come from common.validation, the single source shared with the web page.
 """
 
+from drf_spectacular.utils import extend_schema_serializer
 from rest_framework import serializers
 
 from common.passwords import password_validators_error
@@ -13,6 +14,7 @@ from countries.selectors import dial_codes
 from customers.models import Customer
 
 
+@extend_schema_serializer(component_name="Registration")  # -> "RegistrationRequest"
 class RegistrationRequestSerializer(serializers.Serializer):
     first_name = raw_text(help_text="Latin letters, longer than 3 characters.")
     last_name = raw_text(help_text="Latin letters, longer than 3 characters.")

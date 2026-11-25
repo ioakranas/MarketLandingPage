@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "drf_spectacular",
     # Project apps, one per feature
     "common",
     "accounts",
@@ -102,6 +103,40 @@ REST_FRAMEWORK = {
     # Every error as RFC 9457 Problem Details.
     "EXCEPTION_HANDLER": "common.api.api_exception_handler",
     "UNAUTHENTICATED_USER": None,
+    # OpenAPI 3 schema generated from the views and serializers (drf-spectacular).
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+# Served at /api/v1/schema (OpenAPI 3) and /api/v1/docs (Swagger UI).
+SWAGGER_UI_VERSION = "5.17.14"  # pinned: the UI is loaded from a CDN
+SPECTACULAR_SETTINGS = {
+    "TITLE": "HF Markets Landing Page API",
+    "VERSION": "1.0.0",
+    "DESCRIPTION": (
+        "Customer registration and login.\n\n"
+        "**Authentication**: server-side session. `POST /api/v1/sessions` sets an HttpOnly "
+        "`sessionid` cookie; the browser sends it automatically.\n\n"
+        "**CSRF**: every POST and DELETE must send the value of the `csrftoken` cookie in "
+        "the `X-CSRFToken` header (this page does it for you).\n\n"
+        "**Errors**: always `application/problem+json` (RFC 9457). Branch on `type`; show "
+        "`detail` to users; `errors` holds one message per invalid field.\n\n"
+        "**Versioning**: in the path. Breaking changes get a new version; v1 keeps working."
+    ),
+    "SCHEMA_PATH_PREFIX": r"/api/v[0-9]+",
+    "SERVE_INCLUDE_SCHEMA": False,  # the schema endpoint doesn't document itself
+    # Separate request/response components: write-only fields (password) never
+    # appear in a response schema.
+    "COMPONENT_SPLIT_REQUEST": True,
+    "TAGS": [
+        {"name": "Registration", "description": "Customer sign-up."},
+        {"name": "Sessions", "description": "Log in, current session, log out."},
+        {"name": "Countries", "description": "Reference data for the sign-up form."},
+    ],
+    "SWAGGER_UI_DIST": f"https://cdn.jsdelivr.net/npm/swagger-ui-dist@{SWAGGER_UI_VERSION}",
+    "SWAGGER_UI_FAVICON_HREF": (
+        f"https://cdn.jsdelivr.net/npm/swagger-ui-dist@{SWAGGER_UI_VERSION}/favicon-32x32.png"
+    ),
+    "SWAGGER_UI_SETTINGS": {"displayOperationId": True},
 }
 
 # --- passwords ----------------------------------------------------------------------

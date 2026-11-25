@@ -14,6 +14,7 @@ from django.contrib.auth import login, logout
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
+from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -24,6 +25,7 @@ from authentication.serializers import LoginRequestSerializer, SessionResponseSe
 from authentication.services import AccountLocked, InvalidCredentials, authenticate_customer
 from common.api import ApiProblem
 from common.authentication import SESSION_AUTH_CHALLENGE
+from common.schema import CSRF_PROBLEM, NOT_AUTHENTICATED_PROBLEM, problem, validation_problem
 
 
 # CSRF on login too ("login CSRF"): otherwise another site could log a visitor into
@@ -33,6 +35,44 @@ class SessionCreateView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []  # anonymous endpoint
 
+    @extend_schema(
+        tags=["Sessions"],
+        operation_id="createSession",
+        summary="Log in",
+        description="Starts a server-side session: the response sets the `sessionid` cookie "
+        "(HttpOnly) and a new `csrftoken` cookie. The `Location` header points to the "
+        "current session. After 5 failed attempts in 15 minutes the account is locked "
+        "(429, with a `Retry-After` header in seconds).",
+        request=LoginRequestSerializer,
+        examples=[
+            OpenApiExample(
+                "Credentials",
+                request_only=True,
+                value={"email": "ioannis@example.com", "password": "Secret#123"},
+            )
+        ],
+        responses=dict(
+            [
+                (201, OpenApiResponse(SessionResponseSerializer, "Logged in.")),
+                validation_problem({"email": "Please enter a valid email address (e.g. name@example.com)."}),
+                problem(
+                    401,
+                    "invalid-credentials",
+                    "Invalid credentials",
+                    "Invalid email or password.",
+                    "Unknown email or wrong password: deliberately the same answer for both.",
+                ),
+                CSRF_PROBLEM,
+                problem(
+                    429,
+                    "account-locked",
+                    "Account temporarily locked",
+                    "Too many failed login attempts. Please try again in 15 minute(s).",
+                    "Too many failed attempts; the Retry-After header says when to try again.",
+                ),
+            ]
+        ),
+    )
     def post(self, request):
         serializer = LoginRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)  # -> 400 Problem Details
@@ -73,9 +113,32 @@ class CurrentSessionView(APIView):
     # Default permission: IsAuthenticated -> 401 without a session.
     # DELETE is CSRF-checked by SessionAuthentication, so other sites can't log users out.
 
+    @extend_schema(
+        tags=["Sessions"],
+        operation_id="getCurrentSession",
+        summary="Current session",
+        description="Who is logged in, and their previous login (null on the first one).",
+        responses=dict(
+            [(200, OpenApiResponse(SessionResponseSerializer, "Logged in.")), NOT_AUTHENTICATED_PROBLEM]
+        ),
+    )
     def get(self, request):
         return Response(SessionResponseSerializer(session_summary(request.user)).data)
 
+    @extend_schema(
+        tags=["Sessions"],
+        operation_id="deleteCurrentSession",
+        summary="Log out",
+        description="Deletes the server-side session: the session cookie stops working "
+        "immediately, on every device it was copied to.",
+        responses=dict(
+            [
+                (204, OpenApiResponse(description="Logged out.")),
+                NOT_AUTHENTICATED_PROBLEM,
+                CSRF_PROBLEM,
+            ]
+        ),
+    )
     def delete(self, request):
         logout(request)  # deletes the server-side session
         return Response(status=status.HTTP_204_NO_CONTENT)

@@ -5,6 +5,7 @@ import os
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import RedirectView
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from authentication.api import CurrentSessionView, SessionCreateView
 from authentication.views import login_page, welcome_page
@@ -22,6 +23,9 @@ api_v1 = [
     path("registrations", RegistrationView.as_view(), name="registrations"),
     path("sessions", SessionCreateView.as_view(), name="sessions"),
     path("sessions/current", CurrentSessionView.as_view(), name="current-session"),
+    # API documentation: the OpenAPI 3 document and Swagger UI on top of it.
+    path("schema", SpectacularAPIView.as_view(), name="schema"),
+    path("docs", SpectacularSwaggerView.as_view(url_name="v1:schema"), name="docs"),
 ]
 
 # Pages: GET only. Their JavaScript talks to the API above.
