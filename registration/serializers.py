@@ -6,25 +6,20 @@ and messages come from common.validation, the single source shared with the web 
 
 from rest_framework import serializers
 
+from common.serializers import raw_text
 from common.validation import Registration, validate_registration
 from countries.selectors import dial_codes
 from customers.models import Customer
 
 
-def _text(**kwargs) -> serializers.CharField:
-    # Not required and no trimming at this level: the validation layer reports missing
-    # values with its own messages and decides what to trim (never the password).
-    return serializers.CharField(required=False, allow_blank=True, trim_whitespace=False, **kwargs)
-
-
 class RegistrationRequestSerializer(serializers.Serializer):
-    first_name = _text(help_text="Latin letters, longer than 3 characters.")
-    last_name = _text(help_text="Latin letters, longer than 3 characters.")
-    country = _text(help_text="ISO 3166-1 alpha-2 code, e.g. GR (see /api/v1/countries).")
-    phone_code = _text(help_text="Dial code of the selected country, digits only, e.g. 30.")
-    phone = _text(help_text="National number, 6-14 digits (spaces and dashes are ignored).")
-    email = _text()
-    password = _text(
+    first_name = raw_text(help_text="Latin letters, longer than 3 characters.")
+    last_name = raw_text(help_text="Latin letters, longer than 3 characters.")
+    country = raw_text(help_text="ISO 3166-1 alpha-2 code, e.g. GR (see /api/v1/countries).")
+    phone_code = raw_text(help_text="Dial code of the selected country, digits only, e.g. 30.")
+    phone = raw_text(help_text="National number, 6-14 digits (spaces and dashes are ignored).")
+    email = raw_text()
+    password = raw_text(
         write_only=True,
         style={"input_type": "password"},
         help_text="8-128 characters with at least one capital letter, one number and one symbol.",
@@ -46,4 +41,6 @@ class CustomerResponseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Customer
-        fields = ["id", "email", "first_name", "last_name", "country", "phone", "created_at"]
+        # No "id": the client never needs it, and sequential keys would leak how many
+        # customers there are. A public id would be a UUID, never the primary key.
+        fields = ["email", "first_name", "last_name", "country", "phone", "created_at"]

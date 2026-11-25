@@ -5,6 +5,7 @@ variables, and the defaults are the safe choice (DEBUG off, secure headers on).
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key
@@ -40,6 +41,7 @@ INSTALLED_APPS = [
     "countries",
     "customers",
     "registration",
+    "authentication",
 ]
 
 # Identity model with email login, defined before the first migration (Django's advice:
@@ -94,7 +96,7 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
     # Our own pages call the API with the session cookie.
-    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": ["common.authentication.SessionAuthentication"],
     # Secure by default: endpoints must opt in to anonymous access.
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     # Every error as RFC 9457 Problem Details.
@@ -111,10 +113,23 @@ PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.PBKDF2PasswordHasher",
 ]
 
+# --- login lockout ------------------------------------------------------------------
+
+# An account locks after this many failed logins within the window (failures before
+# the last successful login don't count). Brute force on one account becomes ~20
+# guesses per hour; per-IP rate limiting covers guessing across many accounts.
+LOGIN_LOCKOUT_THRESHOLD = 5
+LOGIN_LOCKOUT_WINDOW = timedelta(minutes=15)
+
 # --- sessions & cookies -------------------------------------------------------------
 
 # Server-side sessions (database): logging out really invalidates the session.
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
+# Idle timeout, as expected from a financial app: logged out after 30 minutes without
+# activity (Django's default is 2 weeks). Saving on every request makes the expiry
+# sliding: each request pushes it 30 minutes ahead, at the cost of one session write.
+SESSION_COOKIE_AGE = 30 * 60
+SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"

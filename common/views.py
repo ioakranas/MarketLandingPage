@@ -4,6 +4,7 @@ from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.views.csrf import csrf_failure as html_csrf_failure
 
 from common.api import PROBLEM_BASE_URL, PROBLEM_CONTENT_TYPE
+from common.authentication import CSRF_FAILED_DETAIL
 
 
 def csrf_failure(request: HttpRequest, reason: str = "") -> HttpResponse:
@@ -17,7 +18,7 @@ def csrf_failure(request: HttpRequest, reason: str = "") -> HttpResponse:
                 "type": PROBLEM_BASE_URL + "csrf-failed",
                 "title": "Forbidden",
                 "status": 403,
-                "detail": "CSRF verification failed. Reload the page and try again.",
+                "detail": CSRF_FAILED_DETAIL,
             },
             status=403,
             content_type=PROBLEM_CONTENT_TYPE,

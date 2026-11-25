@@ -59,6 +59,8 @@ def test_cookie_and_header_hardening():
     assert settings.SESSION_COOKIE_HTTPONLY is True
     assert settings.SESSION_COOKIE_SAMESITE == "Lax"
     assert settings.SESSION_ENGINE == "django.contrib.sessions.backends.db"
+    assert settings.SESSION_COOKIE_AGE == 30 * 60
+    assert settings.SESSION_SAVE_EVERY_REQUEST is True
     assert settings.X_FRAME_OPTIONS == "DENY"
     assert settings.SECURE_CONTENT_TYPE_NOSNIFF is True
 

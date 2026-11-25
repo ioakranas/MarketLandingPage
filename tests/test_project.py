@@ -38,6 +38,7 @@ def admin_client(client):
         "/admin/accounts/user/add/",
         "/admin/countries/country/",
         "/admin/customers/customer/",
+        "/admin/authentication/loginattempt/",
     ],
 )
 def test_admin_pages_load_for_staff(admin_client, url):

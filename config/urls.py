@@ -5,6 +5,7 @@ import os
 from django.contrib import admin
 from django.urls import include, path
 
+from authentication.api import CurrentSessionView, SessionCreateView
 from countries.api import CountryListView
 from registration.api import RegistrationView
 
@@ -16,6 +17,8 @@ ADMIN_PATH = os.environ.get("DJANGO_ADMIN_PATH", "admin/")
 api_v1 = [
     path("countries", CountryListView.as_view(), name="countries"),
     path("registrations", RegistrationView.as_view(), name="registrations"),
+    path("sessions", SessionCreateView.as_view(), name="sessions"),
+    path("sessions/current", CurrentSessionView.as_view(), name="current-session"),
 ]
 
 urlpatterns = [

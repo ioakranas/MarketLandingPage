@@ -24,11 +24,21 @@ PROBLEM_BASE_URL = "https://hfmarkets.example/problems/"
 class ApiProblem(exceptions.APIException):
     """Domain error with a stable problem type, raised by API views."""
 
-    def __init__(self, status_code: int, problem: str, title: str, detail: str, **extra):
+    def __init__(
+        self,
+        status_code: int,
+        problem: str,
+        title: str,
+        detail: str,
+        *,
+        headers: dict[str, str] | None = None,
+        **extra,
+    ):
         super().__init__(detail)
         self.status_code = status_code
         self.problem = problem
         self.title = title
+        self.headers = headers or {}
         self.extra = extra
 
 
@@ -46,7 +56,12 @@ def problem_response(status_code: int, problem: str, title: str, detail: str, **
 def api_exception_handler(exc, context):
     """DRF's EXCEPTION_HANDLER: map every exception to Problem Details."""
     if isinstance(exc, ApiProblem):
-        return problem_response(exc.status_code, exc.problem, exc.title, str(exc.detail), **exc.extra)
+        response = problem_response(
+            exc.status_code, exc.problem, exc.title, str(exc.detail), **exc.extra
+        )
+        for header, value in exc.headers.items():
+            response[header] = value
+        return response
 
     if isinstance(exc, exceptions.ValidationError):
         return problem_response(

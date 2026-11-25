@@ -36,7 +36,6 @@ def test_successful_registration_returns_201_and_the_customer(api_client):
     assert response.status_code == 201
     body = response.json()
     assert body == {
-        "id": body["id"],
         "email": "ioannis@example.com",
         "first_name": "Ioannis",
         "last_name": "Papadopoulos",
