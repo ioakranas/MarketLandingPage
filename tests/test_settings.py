@@ -42,8 +42,17 @@ def test_secure_cookies_switch(monkeypatch):
     assert secure.CSRF_COOKIE_SECURE is True
 
 
-def test_argon2_is_the_default_password_hasher():
-    assert settings.PASSWORD_HASHERS[0].endswith("Argon2PasswordHasher")
+def test_argon2_is_the_default_password_hasher(monkeypatch):
+    # Read from the settings module: tests swap in a fast hasher at runtime.
+    hashers = load_settings(monkeypatch).PASSWORD_HASHERS
+    assert hashers[0] == "django.contrib.auth.hashers.Argon2PasswordHasher"
+
+
+def test_api_is_json_only_and_secure_by_default():
+    api = settings.REST_FRAMEWORK
+    assert api["DEFAULT_RENDERER_CLASSES"] == ["rest_framework.renderers.JSONRenderer"]
+    assert api["DEFAULT_PERMISSION_CLASSES"] == ["rest_framework.permissions.IsAuthenticated"]
+    assert api["EXCEPTION_HANDLER"] == "common.api.api_exception_handler"
 
 
 def test_cookie_and_header_hardening():

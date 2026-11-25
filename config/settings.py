@@ -33,11 +33,13 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework",
     # Project apps, one per feature
     "common",
     "accounts",
     "countries",
     "customers",
+    "registration",
 ]
 
 # Identity model with email login, defined before the first migration (Django's advice:
@@ -85,6 +87,21 @@ DATABASES = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# --- REST API -----------------------------------------------------------------------
+
+REST_FRAMEWORK = {
+    # JSON in, JSON out. (No HTML "browsable API": Swagger UI documents the API.)
+    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
+    # Our own pages call the API with the session cookie.
+    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
+    # Secure by default: endpoints must opt in to anonymous access.
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    # Every error as RFC 9457 Problem Details.
+    "EXCEPTION_HANDLER": "common.api.api_exception_handler",
+    "UNAUTHENTICATED_USER": None,
+}
+
 # --- passwords ----------------------------------------------------------------------
 
 # Argon2id first: new passwords are hashed with it, and hashes made with any other
@@ -101,6 +118,7 @@ SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_FAILURE_VIEW = "common.views.csrf_failure"
 # Must be on whenever the site is served over HTTPS (always, in production).
 SESSION_COOKIE_SECURE = env_flag("DJANGO_SECURE_COOKIES")
 CSRF_COOKIE_SECURE = env_flag("DJANGO_SECURE_COOKIES")

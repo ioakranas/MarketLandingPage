@@ -9,6 +9,21 @@ from customers.models import Customer
 PASSWORD = "Secret#123"
 
 
+@pytest.fixture(autouse=True)
+def fast_password_hashing(settings):
+    """Argon2 is deliberately slow (100 MB, several passes). Tests use the same algorithm
+    with tiny parameters so the suite stays fast; the production settings are covered
+    by tests/test_settings.py."""
+    settings.PASSWORD_HASHERS = ["tests.hashers.FastArgon2PasswordHasher"]
+
+
+@pytest.fixture
+def api_client():
+    from rest_framework.test import APIClient
+
+    return APIClient()
+
+
 @pytest.fixture
 def greece(db):
     """Seeded by the countries data migration."""
