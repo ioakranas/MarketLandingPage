@@ -49,6 +49,11 @@ a {
     color: var(--color-red);
 }
 
+/* The hidden attribute must win over any display rule (e.g. the form error box). */
+[hidden] {
+    display: none !important;
+}
+
 /* Hidden visually, still announced by screen readers. */
 .visually-hidden {
     position: absolute;

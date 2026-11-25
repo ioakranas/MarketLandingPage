@@ -113,7 +113,23 @@ PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.PBKDF2PasswordHasher",
 ]
 
-# --- login lockout ------------------------------------------------------------------
+# Applied to every password: registration API, admin, createsuperuser, password changes.
+AUTH_PASSWORD_VALIDATORS = [
+    # Our policy: length, capital letter, number, symbol (same rules the forms show).
+    {"NAME": "common.passwords.PasswordPolicyValidator"},
+    # Blocklist of ~20,000 common passwords ("Password1!" passes the policy, not this).
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    # Not too close to the email address.
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "OPTIONS": {"user_attributes": ["email"]},
+    },
+]
+
+# --- login --------------------------------------------------------------------------
+
+# Where @login_required sends visitors without a session.
+LOGIN_URL = "login"
 
 # An account locks after this many failed logins within the window (failures before
 # the last successful login don't count). Brute force on one account becomes ~20

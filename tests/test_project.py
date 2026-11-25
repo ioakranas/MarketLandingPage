@@ -58,3 +58,13 @@ def test_admin_can_create_a_user(admin_client):
     )
     assert response.status_code == 302
     assert User.objects.filter(email__iexact="staff@example.com").exists()
+
+
+def test_admin_enforces_the_password_policy_for_staff(admin_client):
+    response = admin_client.post(
+        "/admin/accounts/user/add/",
+        {"email": "staff@example.com", "password1": "1", "password2": "1"},
+    )
+    assert response.status_code == 200  # form shown again with the error
+    assert "Password must be at least 8 characters." in response.content.decode()
+    assert not User.objects.filter(email="staff@example.com").exists()

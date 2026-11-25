@@ -4,20 +4,21 @@
 {% block heading %}Welcome{% endblock %}
 
 {% block header_action %}
-<form method="post" action="{{ url_for('auth.logout') }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button class="button button--outline-red button--small" type="submit">Logout</button>
-</form>
+<button class="button button--outline-red button--small" type="button"
+        data-logout="{% url 'v1:current-session' %}" data-success-url="{% url 'login' %}">Logout</button>
 {% endblock %}
 
 {% block content %}
 <div class="message">
-    <h2 class="card__title">Welcome back, {{ customer.first_name }}!</h2>
-    <p>You are logged in as <strong>{{ customer.email }}</strong>.</p>
-    {% if stats.previous_login_at %}
-    <p>This is login #{{ stats.login_count }}. Your previous login was on {{ stats.previous_login_at }} UTC.</p>
+    <h2 class="card__title">Welcome back{% if summary.first_name %}, {{ summary.first_name }}{% endif %}!</h2>
+    <p>You are logged in as <strong>{{ summary.email }}</strong>.</p>
+    {% if summary.previous_login_at %}
+    {# Security signal: a login the customer doesn't recognise means someone else got in. #}
+    <p>Your previous login was on {{ summary.previous_login_at|date:"j F Y, H:i" }} UTC.
+        Not you? Please contact support.</p>
     {% else %}
     <p>This is your first login. Welcome aboard!</p>
     {% endif %}
+    <p class="form-error" role="alert" data-form-error hidden></p>
 </div>
 {% endblock %}

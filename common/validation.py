@@ -149,6 +149,21 @@ def validate_login(form: Mapping[str, str]) -> tuple[LoginCredentials | None, Er
     return LoginCredentials(email, password), {}
 
 
+def password_policy_error(password: str | None) -> str | None:
+    """The password policy alone, for every way a password is set (see common.passwords)."""
+    try:
+        _validate_new_password(password)
+    except _Invalid as error:
+        return str(error)
+    return None
+
+
+def password_policy_summary() -> str:
+    """E.g. "8-128 characters, including one capital letter, one number and one symbol." """
+    requirements = _join(list(PASSWORD_REQUIREMENTS.values()))
+    return f"{LIMITS['password_min']}-{LIMITS['password_max']} characters, including {requirements}."
+
+
 def client_config() -> dict:
     """Everything the browser needs to mirror these rules, rendered into the page as JSON."""
     return {

@@ -1,14 +1,15 @@
 /*
- * Front-end enhancements for the registration and login forms.
+ * The pages' client for the JSON API (/api/v1/...).
  *
+ * - Forms are sent with fetch() as JSON; errors come back as RFC 9457 Problem Details
+ *   and are shown next to their fields ("errors") or above the form ("detail").
  * - Instant validation with the SAME rules and messages as the server: they are read
- *   from the JSON config the server renders into the page (app/validation.py is the
- *   single source of truth). This is a convenience only; the server validates again.
- * - Country -> dial code autofill.
- * - Show/hide password toggle.
+ *   from the JSON config the server renders into the page (common/validation.py is the
+ *   single source of truth). This is a convenience only; the API validates again.
+ * - Country -> dial code autofill, show/hide password, logout.
  *
- * Progressive enhancement: without JavaScript every form still works and is fully
- * validated server-side.
+ * Authentication is the session cookie (HttpOnly, sent by the browser automatically);
+ * state-changing requests carry the CSRF token in the X-CSRFToken header.
  */
 (() => {
     "use strict";
@@ -32,7 +33,7 @@
     const SYMBOL = /[^\p{L}\p{N}\s]/u;
     const NAME_SEPARATORS = new Set([" ", "-", "'"]);
 
-    // --- rules (mirror app/validation.py) -------------------------------------------
+    // --- rules (mirror common/validation.py) ----------------------------------------
 
     function buildRules(config) {
         const { limits, labels, messages, passwordRequirements } = config;
@@ -149,7 +150,46 @@
         },
     };
 
-    // --- error display (same markup the server renders) -------------------------------
+    // --- API client ------------------------------------------------------------------------
+
+    const GENERIC_ERROR = "Something went wrong. Please try again.";
+    const NETWORK_ERROR = "We could not reach the server. Please check your connection and try again.";
+
+    // Read on every request, not once: Django issues a new token at login.
+    const csrfToken = () => {
+        const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : "";
+    };
+
+    /** Returns {ok, status, data}; data is the parsed JSON body (or null). Throws on network errors. */
+    async function callApi(url, method, body) {
+        const headers = { Accept: "application/json", "X-CSRFToken": csrfToken() };
+        if (body !== undefined) headers["Content-Type"] = "application/json";
+
+        const response = await fetch(url, {
+            method,
+            headers,
+            body: body === undefined ? undefined : JSON.stringify(body),
+            credentials: "same-origin",
+        });
+        const isJson = /json/.test(response.headers.get("Content-Type") ?? "");
+        const data = isJson ? await response.json().catch(() => null) : null;
+        return { ok: response.ok, status: response.status, data };
+    }
+
+    function showFormError(scope, text) {
+        const element = scope.querySelector("[data-form-error]");
+        if (!element) return;
+        element.textContent = text ?? "";
+        element.hidden = !text;
+    }
+
+    function setBusy(button, busy) {
+        button.disabled = busy;
+        button.toggleAttribute("aria-busy", busy);
+    }
+
+    // --- error display -----------------------------------------------------------------------
 
     function showError(input, text) {
         const host = input.closest(".field");
@@ -207,21 +247,74 @@
             });
         }
 
-        form.addEventListener("submit", (event) => {
+        // Field errors from the API (400, 409) go under their fields, anything else
+        // (401, 403, 429, 5xx) above the form.
+        const showProblem = (problem) => {
+            const errors = problem?.errors ?? {};
+            let first = null;
+            for (const [name, text] of Object.entries(errors)) {
+                const input = inputs.find((candidate) => candidate.name === name);
+                if (input) {
+                    showError(input, text);
+                    touched.add(name);
+                    first ??= input;
+                } else {
+                    showFormError(form, text);
+                }
+            }
+            if (!Object.keys(errors).length) showFormError(form, problem?.detail ?? GENERIC_ERROR);
+            first?.focus();
+        };
+
+        const payload = () =>
+            Object.fromEntries(
+                inputs.map((input) => [input.name, input.type === "checkbox" ? input.checked : input.value]),
+            );
+
+        const button = form.querySelector("[type=submit]");
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault(); // sent by fetch(), not by the browser
+            if (button.disabled) return; // a request is already in flight
+            showFormError(form, null);
+
             const invalid = inputs.filter((input) => !validate(input));
             inputs.forEach((input) => touched.add(input.name));
             if (invalid.length) {
-                event.preventDefault();
                 invalid[0].focus();
                 return;
             }
-            // Prevent double submission while the request is in flight.
-            const button = form.querySelector("[type=submit]");
-            button.disabled = true;
-            button.setAttribute("aria-busy", "true");
+
+            form.dispatchEvent(new Event("api:submit")); // e.g. hide a revealed password
+            setBusy(button, true);
+            try {
+                const result = await callApi(form.dataset.api, "POST", payload());
+                if (result.ok) {
+                    onSuccess(form, result.data);
+                    return; // stays disabled: the page changes
+                }
+                showProblem(result.data);
+            } catch {
+                showFormError(form, NETWORK_ERROR);
+            }
+            setBusy(button, false);
         });
 
         return validate;
+    }
+
+    function onSuccess(form, data) {
+        if (form.dataset.successUrl) {
+            window.location.assign(form.dataset.successUrl);
+            return;
+        }
+        // Replace the form with the success message, filled in as text (never as HTML).
+        const template = document.getElementById(form.dataset.successTemplate);
+        const content = template.content.cloneNode(true);
+        for (const slot of content.querySelectorAll("[data-field]")) {
+            slot.textContent = data?.[slot.dataset.field] ?? "";
+        }
+        form.closest("[data-replace-on-success]").replaceChildren(content);
     }
 
     // --- country -> dial code -----------------------------------------------------------
@@ -231,11 +324,7 @@
         const code = form.querySelector("#phone_code");
         if (!country || !code) return;
 
-        // The code follows from the country, so with JavaScript it is not typed by hand.
-        // (Without JavaScript the field stays editable and the server checks the match.)
-        code.readOnly = true;
-        code.tabIndex = -1;
-
+        // The code follows from the country (the input is read-only); the API checks the match.
         const sync = () => {
             code.value = country.selectedOptions[0]?.dataset.dialCode ?? "";
             if (code.getAttribute("aria-invalid")) validate(code);
@@ -273,10 +362,9 @@
                 input.focus();
             });
 
-            // Switch back to a password field before the form really posts, so the browser
-            // never stores the password in its plain-text autofill history.
-            input.form?.addEventListener("submit", (event) => {
-                if (event.defaultPrevented) return; // blocked by validation: leave as is
+            // Back to a password field before the form is sent, so the browser never stores
+            // the password in its plain-text autofill history.
+            input.form?.addEventListener("api:submit", () => {
                 input.type = "password";
                 render();
             });
@@ -284,6 +372,28 @@
             render();
             wrapper.append(button);
             wrapper.classList.add("password--enhanced");
+        }
+    }
+
+    // --- logout ------------------------------------------------------------------------------
+
+    function setUpLogout() {
+        for (const button of document.querySelectorAll("[data-logout]")) {
+            button.addEventListener("click", async () => {
+                setBusy(button, true);
+                try {
+                    const result = await callApi(button.dataset.logout, "DELETE");
+                    // 204: logged out; 401: the session had already expired. Either way, done.
+                    if (result.ok || result.status === 401) {
+                        window.location.assign(button.dataset.successUrl);
+                        return;
+                    }
+                    showFormError(document, result.data?.detail ?? GENERIC_ERROR);
+                } catch {
+                    showFormError(document, NETWORK_ERROR);
+                }
+                setBusy(button, false);
+            });
         }
     }
 
@@ -295,6 +405,6 @@
         const validate = setUpValidation(form, JSON.parse(configElement.textContent));
         setUpDialCode(form, validate);
     }
-    // After validation: its submit listener must run first (see the toggle's submit handler).
     setUpPasswordToggles();
+    setUpLogout();
 })();

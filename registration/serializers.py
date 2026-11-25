@@ -6,6 +6,7 @@ and messages come from common.validation, the single source shared with the web 
 
 from rest_framework import serializers
 
+from common.passwords import password_validators_error
 from common.serializers import raw_text
 from common.validation import Registration, validate_registration
 from countries.selectors import dial_codes
@@ -30,6 +31,12 @@ class RegistrationRequestSerializer(serializers.Serializer):
 
     def validate(self, attrs) -> Registration:
         registration, errors = validate_registration(attrs, dial_codes())
+        if "password" not in errors:
+            # The policy passed; now the checks shared with staff accounts (common
+            # passwords, similarity to the email). Server-side only: the browser
+            # doesn't download the blocklist.
+            if message := password_validators_error(attrs["password"], attrs.get("email")):
+                errors["password"] = message
         if errors:
             raise serializers.ValidationError(errors)
         return registration

@@ -82,6 +82,9 @@ def test_password_is_not_trimmed(api_client):
         ("phone", "12ab", "Phone number may only contain digits."),
         ("email", "not-an-email", "Please enter a valid email address (e.g. name@example.com)."),
         ("password", "secret123", "Password must include at least one capital letter and one symbol."),
+        # Pass the policy, fail the validators shared with staff accounts:
+        ("password", "Password1!", "This password is too common."),
+        ("password", "Ioannis#1234", "The password is too similar to the email."),
         ("terms", False, "You must accept the Privacy Policy and Terms and Conditions."),
     ],
 )

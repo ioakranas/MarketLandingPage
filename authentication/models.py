@@ -25,6 +25,9 @@ class LoginAttempt(models.Model):
     attempted_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
+        # Django's default would be "authentication_loginattempt" (model name lowercased,
+        # no separator); snake_case reads better in SQL tools.
+        db_table = "authentication_login_attempt"
         # Serves "this user's attempts in the last 15 minutes" (lockout) and
         # "this user's successful logins" (history).
         indexes = [models.Index(fields=["user", "attempted_at"], name="login_attempt_user_time_idx")]

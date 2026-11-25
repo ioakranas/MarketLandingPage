@@ -4,10 +4,13 @@ import os
 
 from django.contrib import admin
 from django.urls import include, path
+from django.views.generic import RedirectView
 
 from authentication.api import CurrentSessionView, SessionCreateView
+from authentication.views import login_page, welcome_page
 from countries.api import CountryListView
 from registration.api import RegistrationView
+from registration.views import register_page
 
 # Back office. The path is configurable so production can move it off the
 # well-known /admin/ that bots probe.
@@ -21,7 +24,16 @@ api_v1 = [
     path("sessions/current", CurrentSessionView.as_view(), name="current-session"),
 ]
 
+# Pages: GET only. Their JavaScript talks to the API above.
+pages = [
+    path("", RedirectView.as_view(pattern_name="register"), name="home"),
+    path("register", register_page, name="register"),
+    path("login", login_page, name="login"),
+    path("welcome", welcome_page, name="welcome"),
+]
+
 urlpatterns = [
+    *pages,
     path("api/v1/", include((api_v1, "v1"))),
     path(ADMIN_PATH, admin.site.urls),
 ]
