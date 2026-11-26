@@ -52,6 +52,10 @@ pages = [
     path("welcome", welcome_page, name="welcome"),
 ]
 
+# Error pages: Problem Details under /api/, the site's HTML pages elsewhere.
+handler404 = "common.views.page_not_found"
+handler500 = "common.views.server_error"
+
 urlpatterns = [
     *pages,
     path("api/v1/", include((api_v1, "v1"))),

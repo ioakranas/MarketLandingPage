@@ -1,6 +1,6 @@
 """Server-side validation: the source of truth for every input rule.
 
-Pure functions with no Flask or database dependency. Each validator returns either the
+Pure functions with no Django or database dependency. Each validator returns either the
 cleaned (normalised) data or a dict of ``field -> error message``, one specific message
 per invalid field.
 
@@ -14,7 +14,8 @@ import unicodedata
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-# Limits are shared with the CHECK constraints in schema.sql.
+# Limits are also used by the models' max_length and CHECK constraints (accounts,
+# customers), so the database enforces the same bounds.
 LIMITS = {
     "name_min_exclusive": 3,  # requirement: "length > 3"
     "name_max": 50,
