@@ -77,6 +77,14 @@ def test_access_log_line_per_request_without_query_string(client, logs):
     assert "secret@example.com" not in logs.text
 
 
+def test_static_files_get_a_request_id_but_no_access_line(client, logs):
+    response = client.get("/static/css/main.css")
+
+    assert response.status_code == 200
+    assert re.fullmatch(r"[0-9a-f]{32}", response["X-Request-ID"])
+    assert not [record for record in logs.records if record.name == "access"]
+
+
 def test_all_lines_of_a_request_share_its_id(api_client, logs, make_customer):
     make_customer()
     response = log_in(api_client, password="Wrong#123")
