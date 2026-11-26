@@ -9,7 +9,7 @@ from rest_framework import serializers
 
 from common.passwords import password_validators_error
 from common.serializers import raw_text
-from common.validation import Registration, validate_registration
+from common.validation import Registration, password_policy_summary, validate_registration
 from countries.selectors import dial_codes
 from customers.models import Customer
 
@@ -25,7 +25,8 @@ class RegistrationRequestSerializer(serializers.Serializer):
     password = raw_text(
         write_only=True,
         style={"input_type": "password"},
-        help_text="8-128 characters with at least one capital letter, one number and one symbol.",
+        # Same wording as the admin's password help (one source: common.validation).
+        help_text=password_policy_summary() + " Common passwords are rejected.",
     )
     terms = serializers.BooleanField(
         required=False, default=False, help_text="Acceptance of the Privacy Policy and Terms."

@@ -10,6 +10,7 @@ deletes it on the server, so a copied cookie stops working immediately.
 
 import math
 
+from django.conf import settings
 from django.contrib.auth import login, logout
 from django.urls import reverse
 from django.utils.decorators import method_decorator
@@ -51,8 +52,9 @@ class SessionCreateView(APIView):
         summary="Log in",
         description="Starts a server-side session: the response sets the `sessionid` cookie "
         "(HttpOnly) and a new `csrftoken` cookie. The `Location` header points to the "
-        "current session. After 5 failed attempts in 15 minutes the account is locked "
-        "(429, with a `Retry-After` header in seconds).",
+        f"current session. After {settings.LOGIN_LOCKOUT_THRESHOLD} failed attempts within "
+        f"{settings.LOGIN_LOCKOUT_WINDOW.total_seconds() / 60:g} minutes the account is "
+        "locked (429, with a `Retry-After` header in seconds).",
         request=LoginRequestSerializer,
         examples=[
             OpenApiExample(
