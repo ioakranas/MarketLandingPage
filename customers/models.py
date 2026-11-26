@@ -2,10 +2,11 @@
 login identity (accounts.User)."""
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 
-from common.validation import LIMITS
+from common.validation import LIMITS, MESSAGES, validate_profile
 
 
 def _name_length(field: str) -> Q:
@@ -34,10 +35,14 @@ class Customer(models.Model):
         # messages); these guarantee no code path can store invalid data.
         constraints = [
             models.CheckConstraint(
-                condition=_name_length("first_name"), name="customers_customer_first_name_length"
+                condition=_name_length("first_name"),
+                name="customers_customer_first_name_length",
+                violation_error_message="First name must be between 4 and 50 characters.",
             ),
             models.CheckConstraint(
-                condition=_name_length("last_name"), name="customers_customer_last_name_length"
+                condition=_name_length("last_name"),
+                name="customers_customer_last_name_length",
+                violation_error_message="Last name must be between 4 and 50 characters.",
             ),
             models.CheckConstraint(
                 condition=Q(
@@ -46,8 +51,20 @@ class Customer(models.Model):
                     phone__length__lte=LIMITS["phone_max"],
                 ),
                 name="customers_customer_phone_format",
+                violation_error_message=MESSAGES["phone_length"].format(
+                    min=LIMITS["phone_min"], max=LIMITS["phone_max"]
+                ),
             ),
         ]
 
     def __str__(self) -> str:
         return f"{self.first_name} {self.last_name}"
+
+    def clean(self) -> None:
+        """Model validation (run by the admin's forms): the same rules and messages as
+        sign-up, so every way of editing a customer accepts exactly the same data."""
+        cleaned, errors = validate_profile(self.first_name, self.last_name, self.phone)
+        if errors:
+            raise ValidationError(errors)
+        for field, value in cleaned.items():
+            setattr(self, field, value)  # e.g. "99 123 456" -> "99123456"

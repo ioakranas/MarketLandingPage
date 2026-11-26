@@ -28,7 +28,11 @@ class DigitsOnly(Lookup):
         if rhs is not True:
             raise ValueError("digits_only only supports the value True")
         lhs, params = self.process_lhs(compiler, connection)
-        return template.format(lhs=lhs), params
+        # The template may use the left-hand side more than once. For a column there are
+        # no parameters, but when Django validates a value (forms, Model.full_clean) the
+        # left side is a "%s" placeholder, so its parameters are needed once per use.
+        uses = template.count("{lhs}")
+        return template.format(lhs=lhs), tuple(params) * uses
 
     def as_sqlite(self, compiler, connection):
         return self._sql(compiler, connection, "({lhs} <> '' AND {lhs} NOT GLOB '*[^0-9]*')")

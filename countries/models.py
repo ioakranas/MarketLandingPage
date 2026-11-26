@@ -21,11 +21,14 @@ class Country(models.Model):
         verbose_name_plural = "countries"
         constraints = [
             models.CheckConstraint(
-                condition=Q(iso_code__length=2), name="countries_country_iso_code_length"
+                condition=Q(iso_code__length=2),
+                name="countries_country_iso_code_length",
+                violation_error_message="ISO code must be exactly 2 letters (e.g. GR).",
             ),
             models.CheckConstraint(
                 condition=Q(dial_code__digits_only=True, dial_code__length__lte=4),
                 name="countries_country_dial_code_digits",
+                violation_error_message="Dial code must be 1-4 digits, without '+' (e.g. 30).",
             ),
         ]
 

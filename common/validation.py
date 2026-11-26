@@ -150,6 +150,21 @@ def validate_login(form: Mapping[str, str]) -> tuple[LoginCredentials | None, Er
     return LoginCredentials(email, password), {}
 
 
+def validate_profile(first_name: str | None, last_name: str | None, phone: str | None):
+    """The customer profile rules alone, for edits outside sign-up (e.g. the admin).
+
+    Returns ``(cleaned, errors)``; ``cleaned`` maps each valid field to its normalised
+    value (trimmed names, phone digits only).
+    """
+    errors: Errors = {}
+    cleaned = {
+        "first_name": _check(errors, "first_name", _validate_name, first_name, "first_name"),
+        "last_name": _check(errors, "last_name", _validate_name, last_name, "last_name"),
+        "phone": _check(errors, "phone", _validate_phone, phone),
+    }
+    return {field: value for field, value in cleaned.items() if field not in errors}, errors
+
+
 def password_policy_error(password: str | None) -> str | None:
     """The password policy alone, for every way a password is set (see common.passwords)."""
     try:

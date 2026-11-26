@@ -59,8 +59,15 @@ class User(AbstractBaseUser, PermissionsMixin):
             models.CheckConstraint(
                 condition=Q(email__length__lte=LIMITS["email_max"], email__contains="@"),
                 name="accounts_user_email_format",
+                violation_error_message="Enter a valid email address.",
             ),
         ]
 
     def __str__(self) -> str:
         return self.email
+
+    def clean(self) -> None:
+        # Admin edits too: stored lower-case like sign-ups (uniqueness is case-insensitive
+        # anyway; this keeps the stored data uniform).
+        super().clean()
+        self.email = normalize_email(self.email)
