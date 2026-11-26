@@ -51,6 +51,7 @@ def test_success_message_is_a_template_filled_as_text(client):
     html = client.get("/register").content.decode()
     assert '<template id="register-success">' in html
     assert 'data-field="first_name"' in html
+    assert '<h2 class="card__title" tabindex="-1">' in html  # focus target after sign-up
 
 
 def test_logged_in_visitors_go_to_their_welcome_page(client, make_customer):

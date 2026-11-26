@@ -67,7 +67,7 @@
 {# Shown by main.js after a successful sign-up; the name is set as text, never as HTML. #}
 <template id="register-success">
     <div class="message message--success" role="status">
-        <h2 class="card__title">Thank you for signing up, <span data-field="first_name"></span>!</h2>
+        <h2 class="card__title" tabindex="-1">Thank you for signing up, <span data-field="first_name"></span>!</h2>
         <p>Your account has been created successfully. You can now log in.</p>
         <a class="button button--red button--submit" href="{% url 'login' %}">Login</a>
     </div>

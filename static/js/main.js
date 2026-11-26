@@ -314,7 +314,11 @@
         for (const slot of content.querySelectorAll("[data-field]")) {
             slot.textContent = data?.[slot.dataset.field] ?? "";
         }
-        form.closest("[data-replace-on-success]").replaceChildren(content);
+        const container = form.closest("[data-replace-on-success]");
+        container.replaceChildren(content);
+        // The focused button is gone with the form: move focus to the message, so
+        // keyboard and screen-reader users continue from there.
+        container.querySelector("[tabindex='-1']")?.focus();
     }
 
     // --- country -> dial code -----------------------------------------------------------
