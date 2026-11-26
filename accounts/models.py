@@ -1,8 +1,7 @@
 """Identity: who can log in. Deliberately free of customer data (see customers.Customer).
 
-Comparable to Spring Security's UserDetails: credentials and account status only, so
-back-office staff and customers share one authentication mechanism without staff
-needing customer fields.
+Credentials and account status only, so back-office staff and customers share one
+authentication mechanism without staff needing customer fields.
 """
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin

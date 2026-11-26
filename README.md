@@ -143,14 +143,14 @@ staff needing customer fields. `customers.Customer` holds the personal data.
 
 ### Layers inside an app
 
-| Layer | Django | Spring equivalent |
-|---|---|---|
-| `api.py` | DRF `APIView` | `@RestController` |
-| `serializers.py` | Request/response shapes | DTOs |
-| `services.py` | Use cases that write (transactions) | `@Service` |
-| `selectors.py` | Read-only queries | Query services |
-| `models.py` | Entities and database constraints | `@Entity` |
-| `views.py` | GET-only HTML pages | `@Controller` + templates |
+| Module | Role |
+|---|---|
+| `api.py` | JSON endpoints (DRF `APIView`s) |
+| `serializers.py` | Request and response shapes |
+| `services.py` | Use cases that write, in transactions |
+| `selectors.py` | Read-only queries |
+| `models.py` | Entities and their database constraints |
+| `views.py` | GET-only HTML pages |
 
 ### API-first pages
 
@@ -181,19 +181,19 @@ authority), the database (the last line of defence, for any code path).
 | Pattern | Where |
 |---|---|
 | Service layer + selectors (reads separated from writes) | `services.py` / `selectors.py` |
-| Active Record (Django ORM), where JPA uses Data Mapper | Models save themselves |
+| Active Record (Django ORM) | Models load and save themselves |
 | DTO | DRF serializers |
 | Value objects | Frozen dataclasses: `Registration`, `LoginCredentials`, `SessionSummary` |
 | Facade + unit of work | `register_customer()`: one transaction across three apps, with a savepoint |
-| Exception translation | `common/api.py` maps every exception to Problem Details (like `@ControllerAdvice`) |
+| Exception translation | `common/api.py` maps every exception to Problem Details |
 | Strategy, chosen in settings | Password hashers, password validators, authentication and throttle classes, log formatters |
 | Chain of responsibility | The middleware chain |
-| Decorator | `login_required`, `csrf_protect`, `never_cache`, `anonymous_only` (Spring uses AOP annotations) |
+| Decorator | `login_required`, `csrf_protect`, `never_cache`, `anonymous_only` |
 | Template method | `common/authentication.py` overrides DRF's `authenticate_header` and `enforce_csrf` hooks |
 | Adapter | `PasswordPolicyValidator` adapts our rules to Django's validator interface; the admin login form adapts the login service |
 | Observer | Django signals (`login()` updates `last_login`) |
 | Null object | `NullHandler` for silenced loggers, `AnonymousUser` |
-| Context object | The request id in a `ContextVar`, on every log line (like SLF4J's MDC) |
+| Context object | The request id in a `ContextVar`, on every log line |
 
 There is no dependency-injection container, which is idiomatic for Python: wiring goes
 through settings (dotted paths) and plain function arguments, and tests replace

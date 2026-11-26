@@ -1,8 +1,7 @@
 """API-wide error handling: every error response is RFC 9457 Problem Details.
 
 One format for all failures (validation, conflicts, wrong method, malformed JSON, ...)
-means clients need a single error-handling path. Comparable to a Spring
-@ControllerAdvice returning ProblemDetail.
+means clients need a single error-handling path.
 
     {
       "type": "https://hfmarkets.example/problems/validation-error",

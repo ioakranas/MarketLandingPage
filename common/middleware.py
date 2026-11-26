@@ -16,7 +16,7 @@ access_logger = logging.getLogger("access")
 
 
 class RequestContextMiddleware:
-    """First in the middleware chain (comparable to a Spring OncePerRequestFilter)."""
+    """First in the middleware chain, so it covers every request and response."""
 
     def __init__(self, get_response):
         self.get_response = get_response

@@ -1,4 +1,4 @@
-"""Django settings (comparable to Spring Boot's application.yml).
+"""Django settings.
 
 Secure by default: everything environment-specific or sensitive comes from environment
 variables, and the defaults are the safe choice (DEBUG off, secure headers on).

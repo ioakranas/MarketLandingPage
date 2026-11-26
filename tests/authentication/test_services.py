@@ -75,7 +75,7 @@ def test_unknown_email_is_not_stored_but_logged_masked(customer, caplog):
 
 def test_unknown_email_still_costs_one_password_hash(db, monkeypatch):
     """Timing-attack mitigation (Django's): no account takes as long as a wrong password."""
-    import django.contrib.auth.base_user as base_user
+    from django.contrib.auth import base_user
 
     hashed = []
     real = base_user.make_password

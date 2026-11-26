@@ -34,12 +34,13 @@ class RegistrationRequestSerializer(serializers.Serializer):
 
     def validate(self, attrs) -> Registration:
         registration, errors = validate_registration(attrs, dial_codes())
-        if "password" not in errors:
-            # The policy passed; now the checks shared with staff accounts (common
-            # passwords, similarity to the email). Server-side only: the browser
-            # doesn't download the blocklist.
-            if message := password_validators_error(attrs["password"], attrs.get("email")):
-                errors["password"] = message
+        # Once the policy passed: the checks shared with staff accounts (common passwords,
+        # similarity to the email). Server-side only: the browser doesn't download the
+        # blocklist.
+        if "password" not in errors and (
+            message := password_validators_error(attrs["password"], attrs.get("email"))
+        ):
+            errors["password"] = message
         if errors:
             raise serializers.ValidationError(errors)
         return registration

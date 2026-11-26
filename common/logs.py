@@ -1,6 +1,5 @@
 """Structured logging: JSON or text lines, every line tagged with its request id.
 
-Comparable to Logback + MDC + logstash-logback-encoder in Spring:
 - request_id_var holds the current request's id (a ContextVar: correct per request
   and per thread/async task); the log record factory copies it onto every record,
   from our code, Django or any library.
