@@ -113,9 +113,9 @@ a {
     display: flex;
     justify-content: center;
     padding: 32px 16px 48px;
-    /* Dark navy fading to warm brown, as in the design. When the Figma background photo
-       is exported to static/img/hero-bg.jpg, add it as the last layer:
-       url("../img/hero-bg.jpg") center / cover no-repeat */
+    /* Dark navy fading to warm brown, the colours of the design's background photo.
+       A CSS gradient instead of the photo: visual design isn't the focus of the exercise,
+       and it keeps the page light (see README). */
     background:
         radial-gradient(ellipse at 50% 110%, rgba(120, 62, 30, 0.55), transparent 60%),
         linear-gradient(180deg, #1c2238 0%, #20263d 45%, #2a2430 100%);

@@ -22,8 +22,9 @@ staticfiles/
 .coverage
 htmlcov/
 
-# Editors / OS
-.vscode/
+# Editors / OS (the shared VS Code debug configuration is kept)
+.vscode/*
+!.vscode/launch.json
 .idea/
 Thumbs.db
 .DS_Store

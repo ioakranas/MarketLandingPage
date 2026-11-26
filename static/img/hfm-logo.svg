@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="108" height="50" viewBox="0 0 108 50" role="img" aria-label="HF Markets">
-  <!-- Placeholder wordmark: replace with the logo exported from the Figma file. -->
+  <!-- Lightweight wordmark in place of the official logo artwork (see README). -->
   <text x="0" y="32" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="700" letter-spacing="-1">HF<tspan fill="#e0141e">M</tspan></text>
   <text x="1" y="47" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="700" letter-spacing="2.6">HF MARKETS</text>
 </svg>

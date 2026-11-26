@@ -1,4 +1,4 @@
-"""Unit tests for app.validation: pure functions, no app or database needed."""
+"""Unit tests for common.validation: pure functions, no Django or database needed."""
 
 import pytest
 
