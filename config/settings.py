@@ -2,13 +2,17 @@
 
 Secure by default: everything environment-specific or sensitive comes from environment
 variables, and the defaults are the safe choice (DEBUG off, secure headers on).
+DJANGO_HTTPS=1 is production mode: HTTPS-only settings on, and a secret key required.
 """
 
 import os
+import warnings
 from datetime import timedelta
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from django.core.management.utils import get_random_secret_key
+from django.utils.csp import CSP
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -17,15 +21,32 @@ def env_flag(name: str, default: bool = False) -> bool:
     return os.environ.get(name, "1" if default else "0").lower() in {"1", "true", "yes"}
 
 
+def env_list(name: str, default: str) -> list[str]:
+    return [item.strip() for item in os.environ.get(name, default).split(",") if item.strip()]
+
+
 # --- core ---------------------------------------------------------------------------
 
-# Required in production. Without it a random per-process key is used: safe, but
-# sessions do not survive a restart.
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY") or get_random_secret_key()
+# Production mode: served over HTTPS (see "HTTPS" below).
+HTTPS = env_flag("DJANGO_HTTPS")
+
+# Signs sessions and CSRF tokens. Required in production: without it every process
+# would invent its own key, and with several server workers a session created by one
+# would be invalid on the others. Locally a random key is fine (sessions just don't
+# survive a restart).
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
+if not SECRET_KEY:
+    if HTTPS:
+        raise ImproperlyConfigured("DJANGO_SECRET_KEY must be set when DJANGO_HTTPS is on.")
+    SECRET_KEY = get_random_secret_key()
 
 DEBUG = env_flag("DJANGO_DEBUG")
 
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+
+# Load balancers / reverse proxies in front of the app (0 = none). Decides whether
+# X-Forwarded-For (client IP) and X-Forwarded-Proto (HTTPS) headers are trusted.
+NUM_PROXIES = int(os.environ.get("DJANGO_NUM_PROXIES", "0"))
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -53,6 +74,8 @@ MIDDLEWARE = [
     # First: the request id and access log cover everything below, errors included.
     "common.middleware.RequestContextMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    # Content-Security-Policy header (SECURE_CSP below; built into Django 6).
+    "django.middleware.csp.ContentSecurityPolicyMiddleware",
     # Serves static files efficiently in any environment (no separate web server needed).
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -119,7 +142,7 @@ REST_FRAMEWORK = {
     # X-Forwarded-For, which the client controls (otherwise a fake header per request
     # would get a fresh limit every time). Behind N trusted proxies (load balancer,
     # CDN), set DJANGO_NUM_PROXIES=N.
-    "NUM_PROXIES": int(os.environ.get("DJANGO_NUM_PROXIES", "0")),
+    "NUM_PROXIES": NUM_PROXIES,
     # OpenAPI 3 schema generated from the views and serializers (drf-spectacular).
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
@@ -252,15 +275,46 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_FAILURE_VIEW = "common.views.csrf_failure"
-# Must be on whenever the site is served over HTTPS (always, in production).
-SESSION_COOKIE_SECURE = env_flag("DJANGO_SECURE_COOKIES")
-CSRF_COOKIE_SECURE = env_flag("DJANGO_SECURE_COOKIES")
+
+# --- HTTPS (DJANGO_HTTPS=1 in production) ---------------------------------------------
+
+# Cookies only travel over HTTPS, plain HTTP is redirected to HTTPS, and browsers are
+# told (HSTS) to use HTTPS only for the next DJANGO_HSTS_SECONDS (default one year).
+# Subdomains and the browsers' preload list are left out on purpose: those can't be
+# undone quickly and are a decision for the whole domain.
+SESSION_COOKIE_SECURE = HTTPS
+CSRF_COOKIE_SECURE = HTTPS
+SECURE_SSL_REDIRECT = HTTPS
+SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_HSTS_SECONDS", "31536000")) if HTTPS else 0
+# The deliberate omissions above, acknowledged so `manage.py check --deploy` is clean.
+SILENCED_SYSTEM_CHECKS = ["security.W005", "security.W021"]  # HSTS subdomains, preload
+if NUM_PROXIES:
+    # TLS ends at the proxy, which tells us the original scheme. Only trustworthy because
+    # our proxy sets this header (overwriting any value sent by the client).
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # --- security headers ---------------------------------------------------------------
 
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
+
+# Content-Security-Policy: the browser only runs scripts and loads resources from the
+# sources listed here. Even if an attacker managed to inject markup, an inline or
+# foreign script would not execute (defence in depth against XSS). Our pages have no
+# inline scripts or styles; the validation config is a JSON data block, not script.
+SECURE_CSP = {
+    "default-src": [CSP.SELF],
+    "script-src": [CSP.SELF],
+    "style-src": [CSP.SELF, "https://fonts.googleapis.com"],
+    "font-src": [CSP.SELF, "https://fonts.gstatic.com"],
+    "img-src": [CSP.SELF, "data:"],
+    "connect-src": [CSP.SELF],
+    "form-action": [CSP.SELF],
+    "frame-ancestors": [CSP.NONE],  # no framing (clickjacking), like X-Frame-Options
+    "base-uri": [CSP.NONE],
+    "object-src": [CSP.NONE],
+}
 
 # --- i18n / time --------------------------------------------------------------------
 
@@ -275,5 +329,7 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 # Filled by `manage.py collectstatic` at deployment (then served compressed and cached).
 STATIC_ROOT = BASE_DIR / "staticfiles"
-# Until collected (local runs, tests), WhiteNoise serves straight from STATICFILES_DIRS.
+# Until collected (local runs, tests), WhiteNoise serves straight from STATICFILES_DIRS,
+# and its warning that staticfiles/ doesn't exist yet is expected: silenced.
 WHITENOISE_USE_FINDERS = True
+warnings.filterwarnings("ignore", message=r"No directory at: .*staticfiles", category=UserWarning)

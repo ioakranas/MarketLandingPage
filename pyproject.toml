@@ -33,7 +33,8 @@ pythonpath = ["."]
 testpaths = ["tests"]
 addopts = "-ra"
 filterwarnings = [
-    # staticfiles/ only exists after `collectstatic`, a deployment step.
+    # staticfiles/ only exists after `collectstatic` (a deployment step). Also silenced in
+    # settings.py for runserver; pytest resets warning filters per test, hence here too.
     "ignore:No directory at.*staticfiles:UserWarning",
 ]
 

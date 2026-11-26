@@ -85,3 +85,20 @@ def test_swagger_ui_is_served_with_a_pinned_version(client):
     assert response.status_code == 200
     assert f"swagger-ui-dist@{settings.SWAGGER_UI_VERSION}" in html
     assert "@latest" not in html
+
+
+def test_swagger_page_has_no_inline_script_and_its_own_policy(client):
+    response = client.get("/api/v1/docs")
+    html = response.content.decode()
+    policy = response["Content-Security-Policy"]
+
+    assert "<script>" not in html  # split view: the setup script is a separate file
+    assert "script-src 'self' https://cdn.jsdelivr.net" in policy
+    assert "'unsafe-inline'" not in policy.split("script-src")[1].split(";")[0]
+
+
+def test_swagger_setup_script_is_served_as_javascript(client):
+    response = client.get("/api/v1/docs?script=")
+    assert response.status_code == 200
+    assert response["Content-Type"].startswith("application/javascript")
+    assert "SwaggerUIBundle" in response.content.decode()

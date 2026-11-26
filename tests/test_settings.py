@@ -8,8 +8,9 @@ from django.core.management import call_command
 
 
 def load_settings(monkeypatch, **env):
-    for name in ["DJANGO_SECRET_KEY", "DJANGO_DEBUG", "DJANGO_SECURE_COOKIES", "DJANGO_NUM_PROXIES",
-                 "DJANGO_LOG_FORMAT", "DJANGO_LOG_LEVEL"]:
+    for name in ["DJANGO_SECRET_KEY", "DJANGO_DEBUG", "DJANGO_HTTPS", "DJANGO_HSTS_SECONDS",
+                 "DJANGO_NUM_PROXIES", "DJANGO_ALLOWED_HOSTS", "DJANGO_LOG_FORMAT",
+                 "DJANGO_LOG_LEVEL"]:
         monkeypatch.delenv(name, raising=False)
     for name, value in env.items():
         monkeypatch.setenv(name, value)
@@ -37,10 +38,44 @@ def test_random_secret_key_when_environment_missing(monkeypatch):
     assert len(first) >= 50
 
 
-def test_secure_cookies_switch(monkeypatch):
-    secure = load_settings(monkeypatch, DJANGO_SECURE_COOKIES="1")
-    assert secure.SESSION_COOKIE_SECURE is True
-    assert secure.CSRF_COOKIE_SECURE is True
+def test_local_mode_has_no_https_requirements(monkeypatch):
+    local = load_settings(monkeypatch)
+    assert local.SESSION_COOKIE_SECURE is False
+    assert local.SECURE_SSL_REDIRECT is False
+    assert local.SECURE_HSTS_SECONDS == 0
+
+
+def test_https_mode_turns_on_everything_that_belongs_together(monkeypatch):
+    production = load_settings(monkeypatch, DJANGO_HTTPS="1", DJANGO_SECRET_KEY="from-env")
+    assert production.SESSION_COOKIE_SECURE is True
+    assert production.CSRF_COOKIE_SECURE is True
+    assert production.SECURE_SSL_REDIRECT is True
+    assert production.SECURE_HSTS_SECONDS == 31536000  # one year
+    assert not hasattr(production, "SECURE_PROXY_SSL_HEADER")  # no proxy: nothing trusted
+
+
+def test_hsts_duration_is_configurable(monkeypatch):
+    short = load_settings(monkeypatch, DJANGO_HTTPS="1", DJANGO_SECRET_KEY="k", DJANGO_HSTS_SECONDS="3600")
+    assert short.SECURE_HSTS_SECONDS == 3600
+
+
+def test_https_behind_a_proxy_trusts_its_forwarded_proto(monkeypatch):
+    behind_proxy = load_settings(
+        monkeypatch, DJANGO_HTTPS="1", DJANGO_SECRET_KEY="k", DJANGO_NUM_PROXIES="1"
+    )
+    assert behind_proxy.SECURE_PROXY_SSL_HEADER == ("HTTP_X_FORWARDED_PROTO", "https")
+
+
+def test_production_refuses_to_start_without_a_secret_key(monkeypatch):
+    from django.core.exceptions import ImproperlyConfigured
+
+    with pytest.raises(ImproperlyConfigured, match="DJANGO_SECRET_KEY"):
+        load_settings(monkeypatch, DJANGO_HTTPS="1")
+
+
+def test_allowed_hosts_tolerate_spaces(monkeypatch):
+    hosts = load_settings(monkeypatch, DJANGO_ALLOWED_HOSTS=" example.com , www.example.com ,")
+    assert hosts.ALLOWED_HOSTS == ["example.com", "www.example.com"]
 
 
 def test_argon2_is_the_default_password_hasher(monkeypatch):
@@ -75,6 +110,14 @@ def test_api_is_json_only_and_secure_by_default():
     assert api["DEFAULT_RENDERER_CLASSES"] == ["rest_framework.renderers.JSONRenderer"]
     assert api["DEFAULT_PERMISSION_CLASSES"] == ["rest_framework.permissions.IsAuthenticated"]
     assert api["EXCEPTION_HANDLER"] == "common.api.api_exception_handler"
+
+
+def test_content_security_policy_is_strict():
+    from django.utils.csp import CSP
+
+    assert settings.SECURE_CSP["script-src"] == [CSP.SELF]
+    assert settings.SECURE_CSP["default-src"] == [CSP.SELF]
+    assert CSP.UNSAFE_INLINE not in settings.SECURE_CSP["style-src"]
 
 
 def test_cookie_and_header_hardening():
