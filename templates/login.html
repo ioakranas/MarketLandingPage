@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Login | HF Markets{% endblock %}
+{% block heading %}Login{% endblock %}
+
+{% block header_action %}
+<a class="button button--green button--small" href="{% url 'register' %}">Register</a>
+{% endblock %}
+
+{% block content %}
+<h2 class="card__title">Lorem ipsum dolor sit amet</h2>
+
+{{ validation_config|json_script:"validation-config" }}
+
+<form class="form" data-validate="login" data-api="{% url 'v1:sessions' %}"
+      data-success-url="{% url 'welcome' %}" novalidate>
+    {% include "includes/form_status.html" %}
+
+    {% include "includes/input.html" with name="email" label="Email" type="email" autocomplete="username" %}
+    {% include "includes/password.html" with autocomplete="current-password" %}
+
+    <button class="button button--red button--submit" type="submit">Login</button>
+</form>
+{% endblock %}

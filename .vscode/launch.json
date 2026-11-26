@@ -1,0 +1,27 @@
+{
+    // Run and debug configurations for VS Code (Python extension, .venv interpreter).
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Django: runserver",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/manage.py",
+            // --noreload: one process, so breakpoints are hit reliably.
+            "args": ["runserver", "--noreload"],
+            "django": true,
+            "justMyCode": true,
+            "env": {
+                "DJANGO_DEBUG": "1"
+            }
+        },
+        {
+            "name": "pytest: all tests",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": ["-q"],
+            "justMyCode": false
+        }
+    ]
+}

@@ -4,35 +4,43 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "market-landing-page"
-version = "1.0.0"
-description = "HF Markets registration & login landing page (Flask + SQLite)"
+version = "2.0.0"
+description = "HF Markets registration & login (Django + Django REST Framework + SQLite)"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
-    "flask>=3.1,<4",
+    "django>=6.0,<7",
+    "djangorestframework>=3.16,<4",
+    "drf-spectacular>=0.28,<1",
     "argon2-cffi>=25.1,<26",
-    "flask-wtf>=1.2,<2",
+    "whitenoise>=6.9,<7",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8",
+    "pytest-django>=4.11",
     "pytest-cov>=6",
 ]
 
-[tool.setuptools.packages.find]
-include = ["app", "app.*"]
-# templates/ and static/ are found as data folders (namespace packages) holding package-data
-
-[tool.setuptools.package-data]
-app = ["schema.sql", "templates/*.html", "static/**/*"]
+# An application, not a library: pyproject declares dependencies and tool settings only.
+[tool.setuptools]
+packages = []
 
 [tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+pythonpath = ["."]
 testpaths = ["tests"]
 addopts = "-ra"
+filterwarnings = [
+    # staticfiles/ only exists after `collectstatic` (a deployment step). Also silenced in
+    # settings.py for runserver; pytest resets warning filters per test, hence here too.
+    "ignore:No directory at.*staticfiles:UserWarning",
+]
 
 [tool.coverage.run]
-source = ["app"]
+source = ["."]
+omit = [".venv/*", "tests/*", "manage.py", "config/wsgi.py", "*/migrations/*"]
 branch = true
 
 [tool.coverage.report]
